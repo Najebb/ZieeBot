@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZieeBot — The Discord Bot</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ===== BOOT SEQUENCE OVERLAY ===== -->
+<div id="bootOverlay" style="
+  position:fixed;inset:0;background:#000;z-index:999999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2rem;
+">
+  <div style="font-family:'Orbitron',monospace;font-size:2rem;font-weight:900;color:#FF1744;
+    text-shadow:0 0 30px #FF1744,0 0 60px #8B0000;letter-spacing:4px;">
+    ZIEEBOT
+  </div>
+  <div id="bootLog" style="
+    font-family:'Share Tech Mono',monospace;font-size:0.78rem;color:#555;
+    width:360px;display:flex;flex-direction:column;gap:0.5rem;
+  "></div>
+  <div style="width:360px;height:2px;background:#1a0000;position:relative;overflow:hidden;">
+    <div style="
+      position:absolute;top:0;left:-100%;width:100%;height:100%;background:#FF1744;
+      box-shadow:0 0 10px #FF1744;
+      animation:bootBar 2.2s ease forwards;
+    "></div>
+  </div>
+</div>
+<style>
+  @keyframes bootBar { 0%{left:-100%} 100%{left:0} }
+</style>
+
+<!-- CUSTOM CURSOR -->
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- MATRIX CANVAS (hero background) -->
+<canvas id="matrixCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.45;"></canvas>
+
+<!-- PARTICLE CANVAS (ambient) -->
+<canvas id="particleCanvas"></canvas>
+
+<!-- NAVBAR -->
+<nav>
+  <a href="#hero" class="nav-logo">ZIEE<span style="color:#fff">BOT</span></a>
+  <ul class="nav-links">
+    <li><a href="#stats">Stats</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#kelas">Dashboard</a></li>
+    <li><a href="#invite">Support</a></li>
+  </ul>
+  <a href="#invite" class="nav-invite">INVITE BOT</a>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section id="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-scan"></div>
+  <div class="hero-content">
+    <span class="hero-badge hero-enter">// DISCORD BOT v2.0 //</span>
+
+    <div class="hero-layout">
+      <!-- TEXT SIDE -->
+      <div class="hero-text-col">
+        <h1 class="hero-title glitch-text hero-enter" data-text="ZieeBot">ZieeBot</h1>
+        <div class="hero-sub hero-enter">
+          <span id="hero-typewriter">MULTI-PURPOSE DISCORD BOT</span><span class="typewriter-cursor"></span>
+        </div>
+        <p class="hero-desc hero-enter">
+          Bot Discord serba guna yang siap meningkatkan server kamu — dari moderasi, musik, ekonomi, hingga hiburan. Semua dalam satu bot yang powerful.
+        </p>
+        <div class="hero-btns hero-enter">
+          <a href="#invite" class="btn-primary">⚡ INVITE NOW</a>
+          <a href="#features" class="btn-outline">EXPLORE FEATURES</a>
+        </div>
+      </div>
+
+      <!-- AVATAR SIDE -->
+      <div class="hero-avatar-col hero-enter">
+        <div class="bot-avatar-wrap">
+          <!-- Orbit ring + dots -->
+          <div class="bot-orbit-ring">
+            <div class="orbit-dot"></div>
+            <div class="orbit-dot"></div>
+            <div class="orbit-dot"></div>
+          </div>
+
+          <!-- BOT AVATAR SVG -->
+          <svg class="bot-avatar-svg" width="160" height="180" viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="bodyGrad" cx="50%" cy="40%" r="60%">
+                <stop offset="0%" stop-color="#1a0000"/>
+                <stop offset="100%" stop-color="#080808"/>
+              </radialGradient>
+              <radialGradient id="eyeGrad" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#FF6B6B"/>
+                <stop offset="100%" stop-color="#FF1744"/>
+              </radialGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="2.5" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <clipPath id="avatarClip">
+                <rect x="20" y="30" width="120" height="130" rx="12"/>
+              </clipPath>
+              <linearGradient id="scanGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="rgba(255,23,68,0)" />
+                <stop offset="50%" stop-color="rgba(255,23,68,0.25)" />
+                <stop offset="100%" stop-color="rgba(255,23,68,0)" />
+              </linearGradient>
+            </defs>
+
+            <!-- ANTENNA -->
+            <line x1="80" y1="30" x2="80" y2="10" stroke="#FF1744" stroke-width="2" opacity="0.8"/>
+            <circle cx="80" cy="8" r="4" fill="#FF1744" filter="url(#glow)">
+              <animate attributeName="r" values="3;5;3" dur="1.2s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.6;1;0.6" dur="1.2s" repeatCount="indefinite"/>
+            </circle>
+            <line x1="80" y1="18" x2="68" y2="10" stroke="#FF1744" stroke-width="1.2" opacity="0.4"/>
+            <line x1="80" y1="18" x2="92" y2="10" stroke="#FF1744" stroke-width="1.2" opacity="0.4"/>
+
+            <!-- HEAD -->
+            <rect x="20" y="30" width="120" height="100" rx="12"
+              fill="url(#bodyGrad)" stroke="#FF1744" stroke-width="1.5" opacity="0.9"/>
+
+            <!-- INNER PANEL LINES -->
+            <rect x="30" y="40" width="100" height="80" rx="6"
+              fill="none" stroke="#3E0000" stroke-width="1"/>
+            <line x1="30" y1="80" x2="130" y2="80" stroke="#3E0000" stroke-width="0.8" opacity="0.7"/>
+
+            <!-- SCAN LINE (animated via JS) -->
+            <rect id="avatarScanLine" x="20" y="0%" width="120" height="18"
+              fill="url(#scanGrad)" clip-path="url(#avatarClip)" opacity="0.6"/>
+
+            <!-- EYES -->
+            <g filter="url(#glow)">
+              <!-- Left Eye -->
+              <rect class="bot-eye" x="40" y="52" width="28" height="18" rx="4"
+                fill="#FF1744" opacity="0.9"
+                style="transform-origin:54px 61px;transition:transform 0.12s;">
+                <animate attributeName="opacity" values="0.9;1;0.9" dur="2s" repeatCount="indefinite"/>
+              </rect>
+              <rect x="44" y="56" width="8" height="10" rx="2" fill="#000" opacity="0.7"/>
+              <circle cx="59" cy="61" r="2.5" fill="#FF6B6B" opacity="0.8">
+                <animate attributeName="r" values="2;3;2" dur="1.5s" repeatCount="indefinite"/>
+              </circle>
+
+              <!-- Right Eye -->
+              <rect class="bot-eye" x="92" y="52" width="28" height="18" rx="4"
+                fill="#FF1744" opacity="0.9"
+                style="transform-origin:106px 61px;transition:transform 0.12s;">
+                <animate attributeName="opacity" values="0.9;1;0.9" dur="2s" begin="0.3s" repeatCount="indefinite"/>
+              </rect>
+              <rect x="96" y="56" width="8" height="10" rx="2" fill="#000" opacity="0.7"/>
+              <circle cx="111" cy="61" r="2.5" fill="#FF6B6B" opacity="0.8">
+                <animate attributeName="r" values="2;3;2" dur="1.5s" begin="0.2s" repeatCount="indefinite"/>
+              </circle>
+            </g>
+
+            <!-- MOUTH / STATUS BAR -->
+            <rect x="50" y="85" width="60" height="8" rx="4" fill="#1a0000" stroke="#3E0000" stroke-width="1"/>
+            <rect x="52" y="87" width="42" height="4" rx="2" fill="#FF1744" opacity="0.8">
+              <animate attributeName="width" values="10;42;28;42" dur="3s" repeatCount="indefinite"/>
+            </rect>
+
+            <!-- CHEEK ACCENTS -->
+            <circle cx="30" cy="70" r="6" fill="#FF1744" opacity="0.12"/>
+            <circle cx="130" cy="70" r="6" fill="#FF1744" opacity="0.12"/>
+
+            <!-- DETAIL DOTS -->
+            <circle cx="36" cy="108" r="2" fill="#FF1744" opacity="0.5">
+              <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.8s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="44" cy="108" r="2" fill="#FF1744" opacity="0.3">
+              <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.8s" begin="0.3s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="52" cy="108" r="2" fill="#FF1744" opacity="0.5">
+              <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.8s" begin="0.6s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- NECK -->
+            <rect x="68" y="130" width="24" height="14" rx="3"
+              fill="#0f0f0f" stroke="#3E0000" stroke-width="1"/>
+
+            <!-- BODY -->
+            <rect x="25" y="144" width="110" height="28" rx="8"
+              fill="url(#bodyGrad)" stroke="#FF1744" stroke-width="1.2" opacity="0.85"/>
+
+            <!-- BODY DETAIL -->
+            <rect x="38" y="151" width="30" height="5" rx="2" fill="#3E0000"/>
+            <rect x="38" y="151" width="20" height="5" rx="2" fill="#FF1744" opacity="0.6">
+              <animate attributeName="width" values="5;20;12;20" dur="2.5s" repeatCount="indefinite"/>
+            </rect>
+            <circle cx="100" cy="156" r="5" fill="#1a0000" stroke="#FF1744" stroke-width="1">
+            </circle>
+            <circle cx="100" cy="156" r="2.5" fill="#FF1744" opacity="0.8">
+              <animate attributeName="opacity" values="0.4;1;0.4" dur="1s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="114" cy="156" r="4" fill="#1a0000" stroke="#3E0000" stroke-width="1"/>
+            <circle cx="114" cy="156" r="1.5" fill="#555"/>
+          </svg>
+
+          <!-- STATUS BADGE BELOW AVATAR -->
+          <div style="
+            position:absolute;bottom:-28px;left:50%;transform:translateX(-50%);
+            font-family:'Share Tech Mono',monospace;font-size:0.65rem;
+            color:#00ff88;border:1px solid #00ff88;padding:3px 14px;
+            background:rgba(0,255,136,0.05);letter-spacing:3px;white-space:nowrap;
+            clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
+          ">
+            ● <span id="avatarStatusText">ONLINE</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section id="stats" style="padding:0;">
+  <div class="stats-grid">
+    <div class="stat-card reveal"><span class="stat-num" data-target="1247">0</span><span class="stat-label">Servers</span></div>
+    <div class="stat-card reveal stagger-1"><span class="stat-num" data-target="48320">0</span><span class="stat-label">Users</span></div>
+    <div class="stat-card reveal stagger-2"><span class="stat-num" data-target="99">0</span><span class="stat-label">% Uptime</span></div>
+    <div class="stat-card reveal stagger-3"><span class="stat-num" data-target="85">0</span><span class="stat-label">Commands</span></div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag reveal">// CAPABILITIES //</span>
+      <h2 class="section-title glitch-text reveal stagger-1" data-text="FITUR UNGGULAN">FITUR UNGGULAN</h2>
+      <div class="red-line reveal stagger-2"></div>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card reveal stagger-1">
+        <span class="feature-icon">🛡️</span>
+        <div class="feature-num">01 — MODERATION</div>
+        <div class="feature-title">Auto Moderation</div>
+        <p class="feature-desc">Sistem moderasi canggih dengan anti-spam, anti-raid, word filter, dan auto-role management.</p>
+        <div class="feature-commands">
+          <span class="cmd-tag">/ban</span><span class="cmd-tag">/mute</span><span class="cmd-tag">/kick</span><span class="cmd-tag">/warn</span><span class="cmd-tag">/purge</span>
+        </div>
+      </div>
+      <div class="feature-card reveal stagger-2">
+        <span class="feature-icon">🎵</span>
+        <div class="feature-num">02 — MUSIC</div>
+        <div class="feature-title">Music Player</div>
+        <p class="feature-desc">Putar musik dari YouTube, Spotify, dan SoundCloud dengan kualitas audio terbaik dan queue system.</p>
+        <div class="feature-commands">
+          <span class="cmd-tag">/play</span><span class="cmd-tag">/queue</span><span class="cmd-tag">/skip</span><span class="cmd-tag">/loop</span>
+        </div>
+      </div>
+      <div class="feature-card reveal stagger-3">
+        <span class="feature-icon">💰</span>
+        <div class="feature-num">03 — ECONOMY</div>
+        <div class="feature-title">Economy System</div>
+        <p class="feature-desc">Sistem ekonomi lengkap dengan mata uang virtual, toko, leaderboard, dan mini-game seru.</p>
+        <div class="feature-commands">
+          <span class="cmd-tag">/balance</span><span class="cmd-tag">/daily</span><span class="cmd-tag">/shop</span><span class="cmd-tag">/rob</span>
+        </div>
+      </div>
+      <div class="feature-card reveal stagger-4">
+        <span class="feature-icon">📊</span>
+        <div class="feature-num">04 — LEVELING</div>
+        <div class="feature-title">XP & Leveling</div>
+        <p class="feature-desc">Sistem level dan XP untuk menghargai member aktif dengan rank card keren dan custom reward.</p>
+        <div class="feature-commands">
+          <span class="cmd-tag">/rank</span><span class="cmd-tag">/leaderboard</span><span class="cmd-tag">/setxp</span>
+        </div>
+      </div>
+      <div class="feature-card reveal stagger-5">
+        <span class="feature-icon">🎮</span>
+        <div class="feature-num">05 — FUN</div>
+        <div class="feature-title">Fun & Games</div>
+        <p class="feature-desc">Mini-games interaktif, trivia, meme generator, dan berbagai command hiburan untuk seru-seruan.</p>
+        <div class="feature-commands">
+          <span class="cmd-tag">/trivia</span><span class="cmd-tag">/meme</span><span class="cmd-tag">/8ball</span><span class="cmd-tag">/rps</span>
+        </div>
+      </div>
+      <div class="feature-card reveal stagger-6">
+        <span class="feature-icon">⚙️</span>
+        <div class="feature-num">06 — UTILITY</div>
+        <div class="feature-title">Server Utility</div>
+        <p class="feature-desc">Ticket system, giveaway, poll, auto-role, welcome/goodbye message, dan logging lengkap.</p>
+        <div class="feature-commands">
+          <span class="cmd-tag">/ticket</span><span class="cmd-tag">/giveaway</span><span class="cmd-tag">/poll</span><span class="cmd-tag">/setup</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DASHBOARD KELAS -->
+<section id="kelas">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag reveal">// AKADEMIK //</span>
+      <h2 class="section-title glitch-text reveal stagger-1" data-text="DASHBOARD KELAS">DASHBOARD KELAS</h2>
+      <div class="red-line reveal stagger-2"></div>
+      <p style="margin-top:1.5rem;color:var(--text-dim);font-size:0.95rem;" class="reveal stagger-3">
+        Portal informasi akademik — Data Mahasiswa, Jadwal, Tugas, dalam satu dashboard.
+      </p>
+    </div>
+
+    <div class="dashboard-wrap reveal">
+      <!-- TAB BAR -->
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('mahasiswa')">👥 DATA MAHASISWA</button>
+        <button class="tab-btn" onclick="switchTab('jadwal')">📅 JADWAL KULIAH</button>
+        <button class="tab-btn" onclick="switchTab('tugas')">📋 INFO TUGAS</button>
+        <button class="tab-btn" onclick="switchTab('tambah')">➕ TAMBAH DATA</button>
+      </div>
+
+      <!-- TAB: MAHASISWA -->
+      <div class="tab-panel active" id="tab-mahasiswa">
+        <div class="tab-toolbar">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--text-dim);">
+            <span style="color:var(--red-bright);">$</span> SELECT * FROM mahasiswa —
+            <span id="mhsCount" style="color:var(--red-bright);">0</span> records
+          </div>
+          <div style="display:flex;gap:0.8rem;flex-wrap:wrap;">
+            <div class="search-box">
+              <span>🔍</span>
+              <input type="text" placeholder="Cari nama / NIM / jurusan..." id="searchMhs" oninput="filterMhs()">
+            </div>
+            <button class="add-btn" onclick="switchTab('tambah')">+ TAMBAH</button>
+          </div>
+        </div>
+        <div class="mhs-grid" id="mhsGrid"></div>
+      </div>
+
+      <!-- TAB: JADWAL -->
+      <div class="tab-panel" id="tab-jadwal">
+        <div class="tab-toolbar">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--text-dim);">
+            <span style="color:var(--red-bright);">$</span> SELECT jadwal ORDER BY hari, jam
+          </div>
+          <div class="search-box">
+            <span>🔍</span>
+            <input type="text" placeholder="Filter hari / mata kuliah..." id="searchJadwal" oninput="filterJadwal()">
+          </div>
+        </div>
+        <div class="jadwal-list" id="jadwalList"></div>
+      </div>
+
+      <!-- TAB: TUGAS -->
+      <div class="tab-panel" id="tab-tugas">
+        <div class="tab-toolbar">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--text-dim);">
+            <span style="color:var(--red-bright);">$</span> SELECT * FROM tugas ORDER BY deadline
+          </div>
+          <div style="display:flex;gap:0.5rem;">
+            <button class="add-btn" style="background:transparent;border:1px solid #444;color:var(--text-dim);font-size:0.62rem;" onclick="filterTugas('all')">SEMUA</button>
+            <button class="add-btn" style="background:transparent;border:1px solid #00ff88;color:#00ff88;font-size:0.62rem;" onclick="filterTugas('done')">SELESAI</button>
+            <button class="add-btn" style="background:transparent;border:1px solid var(--red-bright);color:var(--red-bright);font-size:0.62rem;" onclick="filterTugas('pending')">PENDING</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="tugas-table" id="tugasTable">
+            <thead>
+              <tr>
+                <th>NAMA TUGAS</th><th>MAHASISWA</th><th>MATA KULIAH</th><th>DEADLINE</th><th>STATUS</th>
+              </tr>
+            </thead>
+            <tbody id="tugasBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: TAMBAH -->
+      <div class="tab-panel" id="tab-tambah">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--text-dim);margin-bottom:24px;">
+          <span style="color:var(--red-bright);">$</span> INSERT INTO mahasiswa VALUES (...)
+        </div>
+        <div class="form-grid" id="addForm">
+          <div class="form-group">
+            <label class="form-label">Nama Lengkap *</label>
+            <input class="form-input" id="f-nama" type="text" placeholder="Masukkan nama lengkap">
+          </div>
+          <div class="form-group">
+            <label class="form-label">NIM *</label>
+            <input class="form-input" id="f-nim" type="text" placeholder="Contoh: 2024007">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Jurusan *</label>
+            <select class="form-select" id="f-jurusan">
+              <option value="">-- Pilih Jurusan --</option>
+              <option>Teknik Informatika</option>
+              <option>Sistem Informasi</option>
+              <option>Desain Komunikasi Visual</option>
+              <option>Teknik Elektro</option>
+              <option>Manajemen</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="f-status">
+              <option value="true">Aktif</option>
+              <option value="false">Tidak Aktif</option>
+            </select>
+          </div>
+          <div class="form-group form-full">
+            <label class="form-label">Jadwal Kuliah</label>
+            <textarea class="form-textarea" id="f-jadwal" placeholder="Contoh:&#10;Senin: Algoritma 08:00&#10;Rabu: Basis Data 10:00"></textarea>
+          </div>
+          <div class="form-group form-full">
+            <label class="form-label">Nama Tugas (pisah dengan koma)</label>
+            <input class="form-input" id="f-tugas" type="text" placeholder="Contoh: Laporan Praktikum, Quiz Online, UAS">
+          </div>
+          <div class="form-actions form-full">
+            <button class="add-btn" onclick="tambahMahasiswa()">✅ SIMPAN DATA</button>
+            <button class="btn-outline" style="padding:10px 24px;font-size:0.7rem;" onclick="resetForm()">🔄 RESET</button>
+          </div>
+          <div id="formMsg" style="grid-column:1/-1;font-family:'Share Tech Mono',monospace;font-size:0.78rem;display:none;padding:12px 16px;border:1px solid;letter-spacing:1px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INVITE -->
+<section id="invite">
+  <div class="container">
+    <div class="invite-box reveal">
+      <div class="section-tag">// BERGABUNG SEKARANG //</div>
+      <h2 class="invite-title glitch-text" data-text="ADD ZIEEBOT">ADD ZIEEBOT</h2>
+      <p class="invite-desc">Gratis selamanya. Tidak ada fitur premium tersembunyi. Tambahkan ZieeBot ke server Discord kamu sekarang!</p>
+      <div class="invite-links">
+        <a href="#" class="btn-primary">⚡ INVITE BOT</a>
+        <a href="#" class="btn-outline">💬 SUPPORT SERVER</a>
+        <a href="#" class="btn-outline">📖 DOCS</a>
+      </div>
+      <div style="margin-top:2rem;border-top:1px solid #1a0000;padding-top:1.5rem;">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--text-dim);letter-spacing:2px;">MADE WITH ❤️ BY ZIEE_DEV • POWERED BY DISCORD.JS</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span class="footer-logo">ZIEEBOT</span>
+  <div class="footer-line"></div>
+  <p class="footer-text">© 2024 ZIEEBOT — ALL RIGHTS RESERVED</p>
+  <p style="margin-top:0.5rem;font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:#333;letter-spacing:2px;">SYSTEM ONLINE // BOT VERSION 2.0.0 // STATUS: OPERATIONAL</p>
+</footer>
+
+<!-- MODAL DETAIL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
