@@ -9,39 +9,82 @@
 </head>
 <body>
 
-<!-- ===== BOOT SEQUENCE OVERLAY ===== -->
-<div id="bootOverlay" style="
-  position:fixed;inset:0;background:#000;z-index:999999;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2rem;
-">
-  <div style="font-family:'Orbitron',monospace;font-size:2rem;font-weight:900;color:#FF1744;
-    text-shadow:0 0 30px #FF1744,0 0 60px #8B0000;letter-spacing:4px;">
-    ZIEEBOT
-  </div>
-  <div id="bootLog" style="
-    font-family:'Share Tech Mono',monospace;font-size:0.78rem;color:#555;
-    width:360px;display:flex;flex-direction:column;gap:0.5rem;
-  "></div>
+<!-- ===== BOOT SEQUENCE ===== -->
+<div id="bootOverlay" style="position:fixed;inset:0;background:#000;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2rem;">
+  <div style="font-family:'Orbitron',monospace;font-size:2rem;font-weight:900;color:#FF1744;text-shadow:0 0 30px #FF1744,0 0 60px #8B0000;letter-spacing:4px;">ZIEEBOT</div>
+  <div id="bootLog" style="font-family:'Share Tech Mono',monospace;font-size:0.78rem;color:#555;width:360px;display:flex;flex-direction:column;gap:0.5rem;"></div>
   <div style="width:360px;height:2px;background:#1a0000;position:relative;overflow:hidden;">
-    <div style="
-      position:absolute;top:0;left:-100%;width:100%;height:100%;background:#FF1744;
-      box-shadow:0 0 10px #FF1744;
-      animation:bootBar 2.2s ease forwards;
-    "></div>
+    <div style="position:absolute;top:0;left:-100%;width:100%;height:100%;background:#FF1744;box-shadow:0 0 10px #FF1744;animation:bootBar 2.2s ease forwards;"></div>
   </div>
 </div>
-<style>
-  @keyframes bootBar { 0%{left:-100%} 100%{left:0} }
-</style>
+<style>@keyframes bootBar{0%{left:-100%}100%{left:0}}</style>
+
+<!-- ===== AUTH OVERLAY ===== -->
+<div id="authOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.97);z-index:99999;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+  <div style="width:100%;max-width:420px;padding:2rem;">
+
+    <!-- Header -->
+    <div style="text-align:center;margin-bottom:2.5rem;">
+      <div style="font-family:'Orbitron',monospace;font-size:1.8rem;font-weight:900;color:#FF1744;text-shadow:0 0 20px #FF1744;letter-spacing:3px;margin-bottom:0.5rem;" id="authTitle">ZIEEBOT LOGIN</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:#555;letter-spacing:3px;" id="authSubtitle">// MASUKKAN KREDENSIAL //</div>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="loginForm" style="display:flex;flex-direction:column;gap:1rem;">
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" id="loginUsername" type="text" placeholder="masukkan username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="loginPassword" type="password" placeholder="masukkan password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div id="loginError" style="display:none;padding:10px 14px;border:1px solid #FF1744;color:#FF1744;font-family:'Share Tech Mono',monospace;font-size:0.75rem;letter-spacing:1px;"></div>
+      <button id="loginBtn" class="add-btn" onclick="doLogin()" style="width:100%;padding:14px;font-size:0.75rem;letter-spacing:3px;">LOGIN</button>
+      <div style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:#555;">
+        Belum punya akun?
+        <span onclick="switchAuthMode('register')" style="color:var(--red-bright);cursor:pointer;text-decoration:underline;">DAFTAR SEKARANG</span>
+      </div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="registerForm" style="display:none;flex-direction:column;gap:1rem;">
+      <div class="form-group">
+        <label class="form-label">Username *</label>
+        <input class="form-input" id="regUsername" type="text" placeholder="3-20 karakter, huruf/angka/_" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email (opsional)</label>
+        <input class="form-input" id="regEmail" type="email" placeholder="email@kamu.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password * (min. 6 karakter)</label>
+        <input class="form-input" id="regPassword" type="password" placeholder="buat password" autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Konfirmasi Password *</label>
+        <input class="form-input" id="regConfirm" type="password" placeholder="ulangi password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()">
+      </div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:#555;padding:8px 12px;border:1px solid #1a0000;background:rgba(139,0,0,0.05);">
+        ℹ️ User pertama yang mendaftar otomatis menjadi <span style="color:var(--red-bright);">ADMIN</span>. User berikutnya menjadi <span style="color:#00ff88;">VIEWER</span>.
+      </div>
+      <div id="registerError" style="display:none;padding:10px 14px;border:1px solid #FF1744;color:#FF1744;font-family:'Share Tech Mono',monospace;font-size:0.75rem;letter-spacing:1px;"></div>
+      <button id="registerBtn" class="add-btn" onclick="doRegister()" style="width:100%;padding:14px;font-size:0.75rem;letter-spacing:3px;">DAFTAR</button>
+      <div style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:#555;">
+        Sudah punya akun?
+        <span onclick="switchAuthMode('login')" style="color:var(--red-bright);cursor:pointer;text-decoration:underline;">LOGIN</span>
+      </div>
+    </div>
+
+  </div>
+</div>
 
 <!-- CUSTOM CURSOR -->
 <div id="cursor"></div>
 <div id="cursor-ring"></div>
 
-<!-- MATRIX CANVAS (hero background) -->
+<!-- CANVAS -->
 <canvas id="matrixCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.45;"></canvas>
-
-<!-- PARTICLE CANVAS (ambient) -->
 <canvas id="particleCanvas"></canvas>
 
 <!-- NAVBAR -->
@@ -51,14 +94,11 @@
     <li><a href="#stats">Stats</a></li>
     <li><a href="#features">Features</a></li>
     <li><a href="#kelas">Dashboard</a></li>
-    <li><a href="#banner">Banner</a></li>
     <li><a href="#invite">Support</a></li>
   </ul>
-  <div style="display:flex;gap:1rem;align-items:center;">
-    <span id="navUser" style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--text-dim);display:none;"></span>
-    <button id="navLoginBtn" class="nav-invite" onclick="openLoginModal()">LOGIN</button>
-    <button id="navLogoutBtn" class="nav-invite" style="display:none;border-color:#555;color:#888;" onclick="doLogout()">LOGOUT</button>
-  </div>
+  <!-- User info bar -->
+  <div id="userInfoBar" style="display:none;align-items:center;gap:1rem;"></div>
+  <a href="#invite" class="nav-invite" id="navInviteBtn">INVITE BOT</a>
 </nav>
 
 <!-- ===== HERO ===== -->
@@ -66,119 +106,53 @@
   <div class="hero-grid"></div>
   <div class="hero-scan"></div>
   <div class="hero-content">
-    <span class="hero-badge hero-enter">// DISCORD BOT v2.0 //</span>
-
+    <span class="hero-badge hero-enter">// DISCORD BOT v3.0 //</span>
     <div class="hero-layout">
-      <!-- TEXT SIDE -->
       <div class="hero-text-col">
         <h1 class="hero-title glitch-text hero-enter" data-text="ZieeBot">ZieeBot</h1>
         <div class="hero-sub hero-enter">
           <span id="hero-typewriter">MULTI-PURPOSE DISCORD BOT</span><span class="typewriter-cursor"></span>
         </div>
-        <p class="hero-desc hero-enter">
-          Bot Discord serba guna yang siap meningkatkan server kamu — dari moderasi, musik, ekonomi, hingga hiburan. Semua dalam satu bot yang powerful.
-        </p>
+        <p class="hero-desc hero-enter">Bot Discord serba guna yang siap meningkatkan server kamu — dari moderasi, musik, ekonomi, hingga hiburan. Semua dalam satu bot yang powerful.</p>
         <div class="hero-btns hero-enter">
           <a href="#invite" class="btn-primary">⚡ INVITE NOW</a>
           <a href="#features" class="btn-outline">EXPLORE FEATURES</a>
         </div>
       </div>
-
-      <!-- AVATAR SIDE -->
       <div class="hero-avatar-col hero-enter">
         <div class="bot-avatar-wrap">
           <div class="bot-orbit-ring">
-            <div class="orbit-dot"></div>
-            <div class="orbit-dot"></div>
-            <div class="orbit-dot"></div>
+            <div class="orbit-dot"></div><div class="orbit-dot"></div><div class="orbit-dot"></div>
           </div>
-
           <svg class="bot-avatar-svg" width="160" height="180" viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <radialGradient id="bodyGrad" cx="50%" cy="40%" r="60%">
-                <stop offset="0%" stop-color="#1a0000"/>
-                <stop offset="100%" stop-color="#080808"/>
-              </radialGradient>
-              <radialGradient id="eyeGrad" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="#FF6B6B"/>
-                <stop offset="100%" stop-color="#FF1744"/>
-              </radialGradient>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="2.5" result="blur"/>
-                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter>
-              <clipPath id="avatarClip">
-                <rect x="20" y="30" width="120" height="130" rx="12"/>
-              </clipPath>
-              <linearGradient id="scanGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="rgba(255,23,68,0)" />
-                <stop offset="50%" stop-color="rgba(255,23,68,0.25)" />
-                <stop offset="100%" stop-color="rgba(255,23,68,0)" />
-              </linearGradient>
+              <radialGradient id="bodyGrad" cx="50%" cy="40%" r="60%"><stop offset="0%" stop-color="#1a0000"/><stop offset="100%" stop-color="#080808"/></radialGradient>
+              <filter id="glow"><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <clipPath id="avatarClip"><rect x="20" y="30" width="120" height="130" rx="12"/></clipPath>
+              <linearGradient id="scanGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(255,23,68,0)"/><stop offset="50%" stop-color="rgba(255,23,68,0.25)"/><stop offset="100%" stop-color="rgba(255,23,68,0)"/></linearGradient>
             </defs>
             <line x1="80" y1="30" x2="80" y2="10" stroke="#FF1744" stroke-width="2" opacity="0.8"/>
-            <circle cx="80" cy="8" r="4" fill="#FF1744" filter="url(#glow)">
-              <animate attributeName="r" values="3;5;3" dur="1.2s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="0.6;1;0.6" dur="1.2s" repeatCount="indefinite"/>
-            </circle>
-            <line x1="80" y1="18" x2="68" y2="10" stroke="#FF1744" stroke-width="1.2" opacity="0.4"/>
-            <line x1="80" y1="18" x2="92" y2="10" stroke="#FF1744" stroke-width="1.2" opacity="0.4"/>
+            <circle cx="80" cy="8" r="4" fill="#FF1744" filter="url(#glow)"><animate attributeName="r" values="3;5;3" dur="1.2s" repeatCount="indefinite"/></circle>
             <rect x="20" y="30" width="120" height="100" rx="12" fill="url(#bodyGrad)" stroke="#FF1744" stroke-width="1.5" opacity="0.9"/>
             <rect x="30" y="40" width="100" height="80" rx="6" fill="none" stroke="#3E0000" stroke-width="1"/>
             <line x1="30" y1="80" x2="130" y2="80" stroke="#3E0000" stroke-width="0.8" opacity="0.7"/>
             <rect id="avatarScanLine" x="20" y="0%" width="120" height="18" fill="url(#scanGrad)" clip-path="url(#avatarClip)" opacity="0.6"/>
             <g filter="url(#glow)">
-              <rect class="bot-eye" x="40" y="52" width="28" height="18" rx="4" fill="#FF1744" opacity="0.9" style="transform-origin:54px 61px;transition:transform 0.12s;">
-                <animate attributeName="opacity" values="0.9;1;0.9" dur="2s" repeatCount="indefinite"/>
-              </rect>
+              <rect class="bot-eye" x="40" y="52" width="28" height="18" rx="4" fill="#FF1744" opacity="0.9" style="transform-origin:54px 61px"><animate attributeName="opacity" values="0.9;1;0.9" dur="2s" repeatCount="indefinite"/></rect>
               <rect x="44" y="56" width="8" height="10" rx="2" fill="#000" opacity="0.7"/>
-              <circle cx="59" cy="61" r="2.5" fill="#FF6B6B" opacity="0.8">
-                <animate attributeName="r" values="2;3;2" dur="1.5s" repeatCount="indefinite"/>
-              </circle>
-              <rect class="bot-eye" x="92" y="52" width="28" height="18" rx="4" fill="#FF1744" opacity="0.9" style="transform-origin:106px 61px;transition:transform 0.12s;">
-                <animate attributeName="opacity" values="0.9;1;0.9" dur="2s" begin="0.3s" repeatCount="indefinite"/>
-              </rect>
+              <rect class="bot-eye" x="92" y="52" width="28" height="18" rx="4" fill="#FF1744" opacity="0.9" style="transform-origin:106px 61px"><animate attributeName="opacity" values="0.9;1;0.9" dur="2s" begin="0.3s" repeatCount="indefinite"/></rect>
               <rect x="96" y="56" width="8" height="10" rx="2" fill="#000" opacity="0.7"/>
-              <circle cx="111" cy="61" r="2.5" fill="#FF6B6B" opacity="0.8">
-                <animate attributeName="r" values="2;3;2" dur="1.5s" begin="0.2s" repeatCount="indefinite"/>
-              </circle>
             </g>
             <rect x="50" y="85" width="60" height="8" rx="4" fill="#1a0000" stroke="#3E0000" stroke-width="1"/>
-            <rect x="52" y="87" width="42" height="4" rx="2" fill="#FF1744" opacity="0.8">
-              <animate attributeName="width" values="10;42;28;42" dur="3s" repeatCount="indefinite"/>
-            </rect>
-            <circle cx="30" cy="70" r="6" fill="#FF1744" opacity="0.12"/>
-            <circle cx="130" cy="70" r="6" fill="#FF1744" opacity="0.12"/>
-            <circle cx="36" cy="108" r="2" fill="#FF1744" opacity="0.5">
-              <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.8s" repeatCount="indefinite"/>
-            </circle>
-            <circle cx="44" cy="108" r="2" fill="#FF1744" opacity="0.3">
-              <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.8s" begin="0.3s" repeatCount="indefinite"/>
-            </circle>
-            <circle cx="52" cy="108" r="2" fill="#FF1744" opacity="0.5">
-              <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.8s" begin="0.6s" repeatCount="indefinite"/>
-            </circle>
+            <rect x="52" y="87" width="42" height="4" rx="2" fill="#FF1744" opacity="0.8"><animate attributeName="width" values="10;42;28;42" dur="3s" repeatCount="indefinite"/></rect>
             <rect x="68" y="130" width="24" height="14" rx="3" fill="#0f0f0f" stroke="#3E0000" stroke-width="1"/>
             <rect x="25" y="144" width="110" height="28" rx="8" fill="url(#bodyGrad)" stroke="#FF1744" stroke-width="1.2" opacity="0.85"/>
             <rect x="38" y="151" width="30" height="5" rx="2" fill="#3E0000"/>
-            <rect x="38" y="151" width="20" height="5" rx="2" fill="#FF1744" opacity="0.6">
-              <animate attributeName="width" values="5;20;12;20" dur="2.5s" repeatCount="indefinite"/>
-            </rect>
-            <circle cx="100" cy="156" r="5" fill="#1a0000" stroke="#FF1744" stroke-width="1"></circle>
-            <circle cx="100" cy="156" r="2.5" fill="#FF1744" opacity="0.8">
-              <animate attributeName="opacity" values="0.4;1;0.4" dur="1s" repeatCount="indefinite"/>
-            </circle>
-            <circle cx="114" cy="156" r="4" fill="#1a0000" stroke="#3E0000" stroke-width="1"/>
-            <circle cx="114" cy="156" r="1.5" fill="#555"/>
+            <rect x="38" y="151" width="20" height="5" rx="2" fill="#FF1744" opacity="0.6"><animate attributeName="width" values="5;20;12;20" dur="2.5s" repeatCount="indefinite"/></rect>
+            <circle cx="100" cy="156" r="5" fill="#1a0000" stroke="#FF1744" stroke-width="1"/>
+            <circle cx="100" cy="156" r="2.5" fill="#FF1744" opacity="0.8"><animate attributeName="opacity" values="0.4;1;0.4" dur="1s" repeatCount="indefinite"/></circle>
           </svg>
-
-          <div style="
-            position:absolute;bottom:-28px;left:50%;transform:translateX(-50%);
-            font-family:'Share Tech Mono',monospace;font-size:0.65rem;
-            color:#00ff88;border:1px solid #00ff88;padding:3px 14px;
-            background:rgba(0,255,136,0.05);letter-spacing:3px;white-space:nowrap;
-            clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
-          ">
+          <div style="position:absolute;bottom:-28px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:#00ff88;border:1px solid #00ff88;padding:3px 14px;background:rgba(0,255,136,0.05);letter-spacing:3px;white-space:nowrap;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);">
             ● <span id="avatarStatusText">ONLINE</span>
           </div>
         </div>
@@ -206,80 +180,92 @@
       <div class="red-line reveal stagger-2"></div>
     </div>
     <div class="features-grid">
-      <div class="feature-card reveal stagger-1">
-        <span class="feature-icon">🛡️</span>
-        <div class="feature-num">01 — MODERATION</div>
-        <div class="feature-title">Auto Moderation</div>
-        <p class="feature-desc">Sistem moderasi canggih dengan anti-spam, anti-raid, word filter, dan auto-role management.</p>
-        <div class="feature-commands">
-          <span class="cmd-tag">/ban</span><span class="cmd-tag">/mute</span><span class="cmd-tag">/kick</span><span class="cmd-tag">/warn</span><span class="cmd-tag">/purge</span>
+      <div class="feature-card reveal stagger-1"><span class="feature-icon">🛡️</span><div class="feature-num">01 — MODERATION</div><div class="feature-title">Auto Moderation</div><p class="feature-desc">Sistem moderasi canggih dengan anti-spam, anti-raid, word filter, dan auto-role management.</p><div class="feature-commands"><span class="cmd-tag">/ban</span><span class="cmd-tag">/mute</span><span class="cmd-tag">/kick</span><span class="cmd-tag">/warn</span></div></div>
+      <div class="feature-card reveal stagger-2"><span class="feature-icon">🎵</span><div class="feature-num">02 — MUSIC</div><div class="feature-title">Music Player</div><p class="feature-desc">Putar musik dari YouTube, Spotify, dan SoundCloud dengan kualitas audio terbaik.</p><div class="feature-commands"><span class="cmd-tag">/play</span><span class="cmd-tag">/queue</span><span class="cmd-tag">/skip</span><span class="cmd-tag">/loop</span></div></div>
+      <div class="feature-card reveal stagger-3"><span class="feature-icon">💰</span><div class="feature-num">03 — ECONOMY</div><div class="feature-title">Economy System</div><p class="feature-desc">Sistem ekonomi lengkap dengan mata uang virtual, toko, leaderboard, dan mini-game.</p><div class="feature-commands"><span class="cmd-tag">/balance</span><span class="cmd-tag">/daily</span><span class="cmd-tag">/shop</span></div></div>
+      <div class="feature-card reveal stagger-4"><span class="feature-icon">📊</span><div class="feature-num">04 — LEVELING</div><div class="feature-title">XP & Leveling</div><p class="feature-desc">Sistem level dan XP untuk menghargai member aktif dengan rank card keren.</p><div class="feature-commands"><span class="cmd-tag">/rank</span><span class="cmd-tag">/leaderboard</span></div></div>
+      <div class="feature-card reveal stagger-5"><span class="feature-icon">🎮</span><div class="feature-num">05 — FUN</div><div class="feature-title">Fun & Games</div><p class="feature-desc">Mini-games interaktif, trivia, meme generator, dan berbagai command hiburan.</p><div class="feature-commands"><span class="cmd-tag">/trivia</span><span class="cmd-tag">/8ball</span><span class="cmd-tag">/quiz</span></div></div>
+      <div class="feature-card reveal stagger-6"><span class="feature-icon">⚙️</span><div class="feature-num">06 — UTILITY</div><div class="feature-title">Server Utility</div><p class="feature-desc">Ticket system, giveaway, poll, auto-role, welcome/goodbye message, dan logging.</p><div class="feature-commands"><span class="cmd-tag">/ticket</span><span class="cmd-tag">/giveaway</span><span class="cmd-tag">/poll</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- DASHBOARD HUB — navigasi ke Economy & Music -->
+<section id="dashboards" style="padding:60px 2rem 0;">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag reveal">// CONTROL CENTER //</span>
+      <h2 class="section-title glitch-text reveal stagger-1" data-text="DASHBOARD HUB">DASHBOARD HUB</h2>
+      <div class="red-line reveal stagger-2"></div>
+      <p style="margin-top:1.5rem;color:var(--text-dim);font-size:0.95rem;" class="reveal stagger-3">Akses semua dashboard dalam satu tempat.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1px;background:#1a0000;margin-bottom:2.5rem;" class="reveal">
+      <!-- Economy Card -->
+      <div onclick="navigateTo('economy')" style="
+        background:var(--dark);padding:2rem 1.75rem;cursor:pointer;
+        position:relative;overflow:hidden;transition:background .25s;
+        border-top:3px solid #FF1744;
+      " onmouseover="this.style.background='#120008'" onmouseout="this.style.background='var(--dark)'">
+        <div style="font-size:2.5rem;margin-bottom:1rem;filter:drop-shadow(0 0 8px #FF1744);">💰</div>
+        <div style="font-family:'Orbitron',monospace;font-size:1rem;font-weight:700;color:#fff;margin-bottom:.5rem;letter-spacing:1px;">ECONOMY DASHBOARD</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:.68rem;color:var(--text-dim);margin-bottom:1.25rem;letter-spacing:1px;">Balance • Leaderboard • Toko • Transaksi</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.25rem;">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;background:#1a0008;border:1px solid #FF174440;color:#FF174499;padding:2px 8px;">/balance</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;background:#1a0008;border:1px solid #FF174440;color:#FF174499;padding:2px 8px;">/daily</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;background:#1a0008;border:1px solid #FF174440;color:#FF174499;padding:2px 8px;">/shop</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;background:#1a0008;border:1px solid #FF174440;color:#FF174499;padding:2px 8px;">/gamble</span>
         </div>
-      </div>
-      <div class="feature-card reveal stagger-2">
-        <span class="feature-icon">🎵</span>
-        <div class="feature-num">02 — MUSIC</div>
-        <div class="feature-title">Music Player</div>
-        <p class="feature-desc">Putar musik dari YouTube, Spotify, dan SoundCloud dengan kualitas audio terbaik dan queue system.</p>
-        <div class="feature-commands">
-          <span class="cmd-tag">/play</span><span class="cmd-tag">/queue</span><span class="cmd-tag">/skip</span><span class="cmd-tag">/loop</span>
+        <div style="font-family:'Orbitron',monospace;font-size:.65rem;letter-spacing:2px;color:#FF1744;display:flex;align-items:center;gap:.5rem;">
+          BUKA DASHBOARD <span style="font-size:.8rem;">→</span>
         </div>
+        <div style="position:absolute;bottom:0;right:0;width:80px;height:80px;background:radial-gradient(circle,rgba(139,0,0,.15),transparent);border-radius:50%;transform:translate(20px,20px);pointer-events:none;"></div>
       </div>
-      <div class="feature-card reveal stagger-3">
-        <span class="feature-icon">💰</span>
-        <div class="feature-num">03 — ECONOMY</div>
-        <div class="feature-title">Economy System</div>
-        <p class="feature-desc">Sistem ekonomi lengkap dengan mata uang virtual, toko, leaderboard, dan mini-game seru.</p>
-        <div class="feature-commands">
-          <span class="cmd-tag">/balance</span><span class="cmd-tag">/daily</span><span class="cmd-tag">/shop</span><span class="cmd-tag">/rob</span>
+
+      <!-- Music Card -->
+      <div onclick="navigateTo('music')" style="
+        background:var(--dark);padding:2rem 1.75rem;cursor:pointer;
+        position:relative;overflow:hidden;transition:background .25s;
+        border-top:3px solid #FF1744;
+      " onmouseover="this.style.background='#120008'" onmouseout="this.style.background='var(--dark)'">
+        <div style="font-size:2.5rem;margin-bottom:1rem;filter:drop-shadow(0 0 8px #FF1744);">🎵</div>
+        <div style="font-family:'Orbitron',monospace;font-size:1rem;font-weight:700;color:#fff;margin-bottom:.5rem;letter-spacing:1px;">MUSIC DASHBOARD</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:.68rem;color:var(--text-dim);margin-bottom:1.25rem;letter-spacing:1px;">Now Playing • Queue • History • Statistik</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.25rem;">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;background:#1a0008;border:1px solid #FF174440;color:#FF174499;padding:2px 8px;">/play</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;background:#1a0008;border:1px solid #FF174440;color:#FF174499;padding:2px 8px;">/queue</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;background:#1a0008;border:1px solid #FF174440;color:#FF174499;padding:2px 8px;">/skip</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;background:#1a0008;border:1px solid #FF174440;color:#FF174499;padding:2px 8px;">/volume</span>
         </div>
-      </div>
-      <div class="feature-card reveal stagger-4">
-        <span class="feature-icon">📊</span>
-        <div class="feature-num">04 — LEVELING</div>
-        <div class="feature-title">XP & Leveling</div>
-        <p class="feature-desc">Sistem level dan XP untuk menghargai member aktif dengan rank card keren dan custom reward.</p>
-        <div class="feature-commands">
-          <span class="cmd-tag">/rank</span><span class="cmd-tag">/leaderboard</span><span class="cmd-tag">/setxp</span>
+        <div style="font-family:'Orbitron',monospace;font-size:.65rem;letter-spacing:2px;color:#FF1744;display:flex;align-items:center;gap:.5rem;">
+          BUKA DASHBOARD <span style="font-size:.8rem;">→</span>
         </div>
+        <div style="position:absolute;bottom:0;right:0;width:80px;height:80px;background:radial-gradient(circle,rgba(139,0,0,.15),transparent);border-radius:50%;transform:translate(20px,20px);pointer-events:none;"></div>
       </div>
-      <div class="feature-card reveal stagger-5">
-        <span class="feature-icon">🎮</span>
-        <div class="feature-num">05 — FUN</div>
-        <div class="feature-title">Fun & Games</div>
-        <p class="feature-desc">Mini-games interaktif, trivia, meme generator, dan berbagai command hiburan untuk seru-seruan.</p>
-        <div class="feature-commands">
-          <span class="cmd-tag">/trivia</span><span class="cmd-tag">/meme</span><span class="cmd-tag">/8ball</span><span class="cmd-tag">/rps</span>
+
+      <!-- Akademik Card -->
+      <div onclick="document.getElementById('kelas').scrollIntoView({behavior:'smooth'})" style="
+        background:var(--dark);padding:2rem 1.75rem;cursor:pointer;
+        position:relative;overflow:hidden;transition:background .25s;
+        border-top:3px solid #FF1744;
+      " onmouseover="this.style.background='#120008'" onmouseout="this.style.background='var(--dark)'">
+        <div style="font-size:2.5rem;margin-bottom:1rem;filter:drop-shadow(0 0 8px #FF1744);">🎓</div>
+        <div style="font-family:'Orbitron',monospace;font-size:1rem;font-weight:700;color:#fff;margin-bottom:.5rem;letter-spacing:1px;">AKADEMIK DASHBOARD</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:.68rem;color:var(--text-dim);margin-bottom:1.25rem;letter-spacing:1px;">Mahasiswa • Jadwal • Tugas • Statistik</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.25rem;">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;background:#1a0008;border:1px solid #FF174440;color:#FF174499;padding:2px 8px;">mahasiswa</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;background:#1a0008;border:1px solid #FF174440;color:#FF174499;padding:2px 8px;">jadwal</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;background:#1a0008;border:1px solid #FF174440;color:#FF174499;padding:2px 8px;">tugas</span>
         </div>
-      </div>
-      <div class="feature-card reveal stagger-6">
-        <span class="feature-icon">⚙️</span>
-        <div class="feature-num">06 — UTILITY</div>
-        <div class="feature-title">Server Utility</div>
-        <p class="feature-desc">Ticket system, giveaway, poll, auto-role, welcome/goodbye message, dan logging lengkap.</p>
-        <div class="feature-commands">
-          <span class="cmd-tag">/ticket</span><span class="cmd-tag">/giveaway</span><span class="cmd-tag">/poll</span><span class="cmd-tag">/setup</span>
+        <div style="font-family:'Orbitron',monospace;font-size:.65rem;letter-spacing:2px;color:#FF1744;display:flex;align-items:center;gap:.5rem;">
+          SCROLL KE BAWAH <span style="font-size:.8rem;">↓</span>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- BANNER SECTION -->
-<section id="banner">
-  <div class="container">
-    <div class="section-header">
-      <span class="section-tag reveal">// BANNER //</span>
-      <h2 class="section-title glitch-text reveal stagger-1" data-text="BOT BANNER">BOT BANNER</h2>
-      <div class="red-line reveal stagger-2"></div>
-      <p style="margin-top:1.5rem;color:var(--text-dim);font-size:0.95rem;" class="reveal stagger-3">
-        Banner animasi resmi ZieeBot — tersedia untuk profil dan promosi.
-      </p>
-    </div>
-    <div class="banner-wrap reveal">
-      <iframe src="zieebot-banner-animated.html" class="banner-iframe" title="ZieeBot Banner"></iframe>
-    </div>
-  </div>
-</section>
+<!-- SPA CONTAINER — Economy & Music load di sini -->
+<div id="spaContainer" style="display:none;min-height:100vh;"></div>
 
 <!-- DASHBOARD KELAS -->
 <section id="kelas">
@@ -288,47 +274,16 @@
       <span class="section-tag reveal">// AKADEMIK //</span>
       <h2 class="section-title glitch-text reveal stagger-1" data-text="DASHBOARD KELAS">DASHBOARD KELAS</h2>
       <div class="red-line reveal stagger-2"></div>
-      <p style="margin-top:1.5rem;color:var(--text-dim);font-size:0.95rem;" class="reveal stagger-3">
-        Portal informasi akademik — Data Mahasiswa, Jadwal, Tugas, dalam satu dashboard.
-      </p>
-    </div>
-
-    <!-- DASHBOARD OVERVIEW -->
-    <div class="dash-overview reveal">
-      <div class="dash-stat-card">
-        <div class="dash-stat-icon">👥</div>
-        <div class="dash-stat-val" id="dashTotalMhs">0</div>
-        <div class="dash-stat-label">Total Mahasiswa</div>
-      </div>
-      <div class="dash-stat-card">
-        <div class="dash-stat-icon" style="color:#00ff88;">●</div>
-        <div class="dash-stat-val" id="dashAktifMhs" style="color:#00ff88;">0</div>
-        <div class="dash-stat-label">Mahasiswa Aktif</div>
-      </div>
-      <div class="dash-stat-card">
-        <div class="dash-stat-icon">📅</div>
-        <div class="dash-stat-val" id="dashTotalJadwal">0</div>
-        <div class="dash-stat-label">Total Jadwal</div>
-      </div>
-      <div class="dash-stat-card">
-        <div class="dash-stat-icon" style="color:var(--red-bright);">📋</div>
-        <div class="dash-stat-val" id="dashPendingTugas" style="color:var(--red-bright);">0</div>
-        <div class="dash-stat-label">Tugas Pending</div>
-      </div>
-      <div class="dash-stat-card">
-        <div class="dash-stat-icon" style="color:#00ff88;">✓</div>
-        <div class="dash-stat-val" id="dashDoneTugas" style="color:#00ff88;">0</div>
-        <div class="dash-stat-label">Tugas Selesai</div>
-      </div>
+      <p style="margin-top:1.5rem;color:var(--text-dim);font-size:0.95rem;" class="reveal stagger-3">Portal informasi akademik — Data Mahasiswa, Jadwal, Tugas, dalam satu dashboard.</p>
     </div>
 
     <div class="dashboard-wrap reveal">
-      <!-- TAB BAR -->
       <div class="tab-bar">
-        <button class="tab-btn active" onclick="switchTab('mahasiswa')">👥 DATA MAHASISWA</button>
-        <button class="tab-btn" onclick="switchTab('jadwal')">📅 JADWAL KULIAH</button>
-        <button class="tab-btn" onclick="switchTab('tugas')">📋 INFO TUGAS</button>
-        <button class="tab-btn" onclick="switchTab('tambah')">➕ TAMBAH DATA</button>
+        <button class="tab-btn active" onclick="switchTab('mahasiswa')">👥 MAHASISWA</button>
+        <button class="tab-btn" onclick="switchTab('jadwal')">📅 JADWAL</button>
+        <button class="tab-btn" onclick="switchTab('tugas')">📋 TUGAS</button>
+        <button class="tab-btn" onclick="switchTab('statistik')">📊 STATISTIK</button>
+        <button class="tab-btn" onclick="switchTab('tambah')">➕ TAMBAH</button>
       </div>
 
       <!-- TAB: MAHASISWA -->
@@ -338,11 +293,12 @@
             <span style="color:var(--red-bright);">$</span> SELECT * FROM mahasiswa —
             <span id="mhsCount" style="color:var(--red-bright);">0</span> records
           </div>
-          <div style="display:flex;gap:0.8rem;flex-wrap:wrap;">
+          <div style="display:flex;gap:0.8rem;flex-wrap:wrap;align-items:center;">
             <div class="search-box">
               <span>🔍</span>
               <input type="text" placeholder="Cari nama / NIM / jurusan..." id="searchMhs" oninput="filterMhs()">
             </div>
+            <button class="add-btn" onclick="exportCSV()" style="background:transparent;border:1px solid #00ff88;color:#00ff88;font-size:0.62rem;">📥 EXPORT CSV</button>
             <button class="add-btn" onclick="switchTab('tambah')">+ TAMBAH</button>
           </div>
         </div>
@@ -377,13 +333,61 @@
         </div>
         <div style="overflow-x:auto;">
           <table class="tugas-table" id="tugasTable">
-            <thead>
-              <tr>
-                <th>NAMA TUGAS</th><th>MAHASISWA</th><th>MATA KULIAH</th><th>DEADLINE</th><th>STATUS</th><th>AKSI</th>
-              </tr>
-            </thead>
+            <thead><tr><th>NAMA TUGAS</th><th>MAHASISWA</th><th>MATA KULIAH</th><th>DEADLINE</th><th>STATUS</th></tr></thead>
             <tbody id="tugasBody"></tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- TAB: STATISTIK -->
+      <div class="tab-panel" id="tab-statistik">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--text-dim);margin-bottom:24px;">
+          <span style="color:var(--red-bright);">$</span> SELECT stats FROM tugas GROUP BY status
+        </div>
+
+        <!-- Summary Cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:#1a0000;margin-bottom:32px;">
+          <div style="background:var(--dark);padding:24px;text-align:center;">
+            <div style="font-family:'Orbitron',monospace;font-size:2rem;font-weight:900;color:var(--red-bright);text-shadow:0 0 10px var(--red);" id="stat-total-tugas">—</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--text-dim);letter-spacing:2px;margin-top:4px;">TOTAL TUGAS</div>
+          </div>
+          <div style="background:var(--dark);padding:24px;text-align:center;">
+            <div style="font-family:'Orbitron',monospace;font-size:2rem;font-weight:900;color:#00ff88;text-shadow:0 0 10px #00ff88;" id="stat-done-tugas">—</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--text-dim);letter-spacing:2px;margin-top:4px;">SELESAI</div>
+          </div>
+          <div style="background:var(--dark);padding:24px;text-align:center;">
+            <div style="font-family:'Orbitron',monospace;font-size:2rem;font-weight:900;color:#FF1744;text-shadow:0 0 10px #FF1744;" id="stat-pending-tugas">—</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--text-dim);letter-spacing:2px;margin-top:4px;">PENDING</div>
+          </div>
+          <div style="background:var(--dark);padding:24px;text-align:center;">
+            <div style="font-family:'Orbitron',monospace;font-size:2rem;font-weight:900;color:#f1c40f;text-shadow:0 0 10px #f1c40f;" id="stat-total-mhs">—</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--text-dim);letter-spacing:2px;margin-top:4px;">MAHASISWA</div>
+          </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:24px;flex-wrap:wrap;">
+          <!-- Donut -->
+          <div style="background:var(--dark);border:1px solid #1a0000;padding:20px;display:flex;flex-direction:column;align-items:center;">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--red-bright);letter-spacing:2px;margin-bottom:12px;">COMPLETION RATE</div>
+            <canvas id="donutChart" width="160" height="160"></canvas>
+            <div style="display:flex;gap:16px;margin-top:12px;font-family:'Share Tech Mono',monospace;font-size:0.62rem;">
+              <span style="color:#00ff88;">● SELESAI</span>
+              <span style="color:#FF1744;">● PENDING</span>
+            </div>
+          </div>
+
+          <!-- Bar chart -->
+          <div style="background:var(--dark);border:1px solid #1a0000;padding:20px;">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--red-bright);letter-spacing:2px;margin-bottom:12px;">TUGAS PER MAHASISWA</div>
+            <canvas id="barChart" width="500" height="160" style="width:100%;max-width:500px;"></canvas>
+          </div>
+        </div>
+
+        <!-- Progress list -->
+        <div style="background:var(--dark);border:1px solid #1a0000;padding:24px;margin-top:24px;">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--red-bright);letter-spacing:2px;margin-bottom:16px;">PROGRESS PER MAHASISWA</div>
+          <div id="progressList"></div>
         </div>
       </div>
 
@@ -393,43 +397,25 @@
           <span style="color:var(--red-bright);">$</span> INSERT INTO mahasiswa VALUES (...)
         </div>
         <div class="form-grid" id="addForm">
-          <div class="form-group">
-            <label class="form-label">Nama Lengkap *</label>
-            <input class="form-input" id="f-nama" type="text" placeholder="Masukkan nama lengkap">
-          </div>
-          <div class="form-group">
-            <label class="form-label">NIM *</label>
-            <input class="form-input" id="f-nim" type="text" placeholder="Contoh: 2024007">
-          </div>
+          <div class="form-group"><label class="form-label">Nama Lengkap *</label><input class="form-input" id="f-nama" type="text" placeholder="Masukkan nama lengkap"></div>
+          <div class="form-group"><label class="form-label">NIM *</label><input class="form-input" id="f-nim" type="text" placeholder="Contoh: 2024007"></div>
           <div class="form-group">
             <label class="form-label">Jurusan *</label>
             <select class="form-select" id="f-jurusan">
               <option value="">-- Pilih Jurusan --</option>
-              <option>Teknik Informatika</option>
-              <option>Sistem Informasi</option>
-              <option>Desain Komunikasi Visual</option>
-              <option>Teknik Elektro</option>
-              <option>Manajemen</option>
+              <option>Teknik Informatika</option><option>Sistem Informasi</option>
+              <option>Desain Komunikasi Visual</option><option>Teknik Elektro</option><option>Manajemen</option>
             </select>
           </div>
           <div class="form-group">
             <label class="form-label">Status</label>
-            <select class="form-select" id="f-status">
-              <option value="true">Aktif</option>
-              <option value="false">Tidak Aktif</option>
-            </select>
+            <select class="form-select" id="f-status"><option value="true">Aktif</option><option value="false">Tidak Aktif</option></select>
           </div>
-          <div class="form-group form-full">
-            <label class="form-label">Jadwal Kuliah</label>
-            <textarea class="form-textarea" id="f-jadwal" placeholder="Contoh:&#10;Senin: Algoritma 08:00&#10;Rabu: Basis Data 10:00"></textarea>
-          </div>
-          <div class="form-group form-full">
-            <label class="form-label">Nama Tugas (pisah dengan koma)</label>
-            <input class="form-input" id="f-tugas" type="text" placeholder="Contoh: Laporan Praktikum, Quiz Online, UAS">
-          </div>
+          <div class="form-group form-full"><label class="form-label">Jadwal Kuliah</label><textarea class="form-textarea" id="f-jadwal" placeholder="Contoh:&#10;Senin: Algoritma 08:00&#10;Rabu: Basis Data 10:00"></textarea></div>
+          <div class="form-group form-full"><label class="form-label">Nama Tugas (pisah dengan koma)</label><input class="form-input" id="f-tugas" type="text" placeholder="Contoh: Laporan Praktikum, Quiz Online, UAS"></div>
           <div class="form-actions form-full">
             <button class="add-btn" onclick="tambahMahasiswa()">✅ SIMPAN DATA</button>
-            <button class="btn-outline" style="padding:10px 24px;font-size:0.7rem;" onclick="resetForm()">🔄 RESET</button>
+            <button class="btn-outline" style="padding:10px 24px;font-size:0.7rem;cursor:pointer;" onclick="resetForm()">🔄 RESET</button>
           </div>
           <div id="formMsg" style="grid-column:1/-1;font-family:'Share Tech Mono',monospace;font-size:0.78rem;display:none;padding:12px 16px;border:1px solid;letter-spacing:1px;"></div>
         </div>
@@ -461,92 +447,30 @@
   <span class="footer-logo">ZIEEBOT</span>
   <div class="footer-line"></div>
   <p class="footer-text">© 2024 ZIEEBOT — ALL RIGHTS RESERVED</p>
-  <p style="margin-top:0.5rem;font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:#333;letter-spacing:2px;">SYSTEM ONLINE // BOT VERSION 2.0.0 // STATUS: OPERATIONAL</p>
+  <p style="margin-top:0.5rem;font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:#333;letter-spacing:2px;">SYSTEM ONLINE // BOT VERSION 3.0.0 // STATUS: OPERATIONAL</p>
 </footer>
 
 <!-- MODAL DETAIL -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModalDirect()">✕</button>
-    <div id="modalBody"></div>
-  </div>
+  <div class="modal"><button class="modal-close" onclick="closeModalDirect()">✕</button><div id="modalBody"></div></div>
 </div>
 
-<!-- LOGIN / REGISTER MODAL -->
-<div class="modal-overlay" id="authModalOverlay" onclick="closeAuthModal(event)">
-  <div class="modal" style="max-width:420px;">
-    <button class="modal-close" onclick="closeAuthModalDirect()">✕</button>
-
-    <div class="auth-tabs">
-      <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">LOGIN</button>
-      <button class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">REGISTER</button>
-    </div>
-
-    <!-- LOGIN FORM -->
-    <div id="authLoginForm">
-      <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--red-bright);letter-spacing:2px;margin-bottom:20px;">
-        $ AUTH LOGIN //
-      </div>
-      <div class="form-group" style="margin-bottom:16px;">
-        <label class="form-label">Username</label>
-        <input class="form-input" id="login-username" type="text" placeholder="Masukkan username">
-      </div>
-      <div class="form-group" style="margin-bottom:20px;">
-        <label class="form-label">Password</label>
-        <input class="form-input" id="login-password" type="password" placeholder="Masukkan password">
-      </div>
-      <button class="add-btn" style="width:100%;" onclick="doLogin()">🔐 LOGIN</button>
-      <div id="loginMsg" style="margin-top:16px;font-family:'Share Tech Mono',monospace;font-size:0.78rem;display:none;padding:10px 14px;border:1px solid;letter-spacing:1px;"></div>
-    </div>
-
-    <!-- REGISTER FORM -->
-    <div id="authRegisterForm" style="display:none;">
-      <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--red-bright);letter-spacing:2px;margin-bottom:20px;">
-        $ AUTH REGISTER //
-      </div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label class="form-label">Username *</label>
-        <input class="form-input" id="reg-username" type="text" placeholder="Buat username">
-      </div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label class="form-label">Email (opsional)</label>
-        <input class="form-input" id="reg-email" type="email" placeholder="email@example.com">
-      </div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label class="form-label">Display Name</label>
-        <input class="form-input" id="reg-display" type="text" placeholder="Nama tampilan">
-      </div>
-      <div class="form-group" style="margin-bottom:20px;">
-        <label class="form-label">Password * (min 6 karakter)</label>
-        <input class="form-input" id="reg-password" type="password" placeholder="Buat password">
-      </div>
-      <button class="add-btn" style="width:100%;" onclick="doRegister()">📝 BUAT AKUN</button>
-      <div id="regMsg" style="margin-top:16px;font-family:'Share Tech Mono',monospace;font-size:0.78rem;display:none;padding:10px 14px;border:1px solid;letter-spacing:1px;"></div>
-    </div>
-  </div>
-</div>
-
-<!-- EDIT MODAL -->
-<div class="modal-overlay" id="editModalOverlay" onclick="closeEditModal(event)">
-  <div class="modal" style="max-width:520px;">
-    <button class="modal-close" onclick="closeEditModalDirect()">✕</button>
+<!-- MODAL EDIT -->
+<div class="modal-overlay" id="editModalOverlay" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal" style="max-width:580px;">
+    <button class="modal-close" onclick="closeEditModal()">✕</button>
     <div id="editModalBody"></div>
   </div>
 </div>
 
-<!-- DELETE CONFIRM MODAL -->
-<div class="modal-overlay" id="confirmModalOverlay" onclick="closeConfirmModal(event)">
-  <div class="modal" style="max-width:400px;text-align:center;">
-    <div style="font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:700;color:var(--red-bright);margin-bottom:1rem;">⚠️ KONFIRMASI HAPUS</div>
-    <p id="confirmText" style="color:var(--text-dim);margin-bottom:1.5rem;font-size:0.95rem;"></p>
-    <div style="display:flex;gap:1rem;justify-content:center;">
-      <button class="btn-outline" style="padding:10px 24px;font-size:0.7rem;" onclick="closeConfirmModalDirect()">BATAL</button>
-      <button class="add-btn" style="background:#8B0000;" id="confirmBtn" onclick="executeDelete()">HAPUS</button>
-    </div>
+<!-- MODAL DELETE CONFIRM -->
+<div class="modal-overlay" id="deleteConfirmOverlay" onclick="if(event.target===this)closeDeleteModal()">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="closeDeleteModal()">✕</button>
+    <div id="deleteConfirmBody"></div>
   </div>
 </div>
 
 <script src="script.js"></script>
 </body>
 </html>
-
