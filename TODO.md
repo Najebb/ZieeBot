@@ -1,33 +1,17 @@
-# TODO.md — Progress Update v1.4 Jebb Bot
+# TODO - Dashboard Login Fix & Owner Account
 
-## Status: 🚧 IN PROGRESS
+## Background
+- Error login dashboard: `Unexpected token '<', "<!DOCTYPE "... is not valid JSON`
+- Penyebab: backend tidak punya route `/auth/*`
+- Owner belum punya akun bawaan (hardcoded)
 
-### Step 1: Database & API Foundation ✅ DONE
-- [x] Update `utils/database.js` — tambah tabel `users` untuk login/register
-- [x] Update `utils/database-simple.js` — tambah users di JSON fallback
-- [x] Update `routes/api.js` — tambah endpoint: auth (login/register), CRUD mahasiswa/jadwal/tugas, dashboard stats
+## Plan & Progress
+- [x] 1. Buat `routes/auth.js` (endpoint login/register/me/logout + owner hardcoded)
+- [x] 2. Mount `/auth` router di `index.js`
+- [x] 3. Update `script.js` agar role `owner` punya akses penuh
 
-### Step 2: Discord Events & History ✅ DONE
-- [x] Update `events/messageCreate.js` — tambah v1.4 ke updateHistory[]
-- [x] Buat `events/guildMemberAdd.js` — welcome message otomatis
-- [x] Update `events/ready.js` — integrasi banner profile
-
-### Step 3: Dashboard Frontend (Login + CRUD)
-- [ ] Update `index.html` — login modal/register, tombol edit/delete, dashboard overview card
-- [ ] Update `script.js` — auth flow (JWT), handler edit/delete/tambah, dashboard stats
-- [ ] Update `style.css` — style login modal, form edit, action buttons
-
-### Step 4: Commands & Help
-- [ ] Update `commands/utility/help.js` — tambah info fitur baru (dashboard, login, banner)
-
-### Step 5: Banner Integration
-- [ ] Integrasi `zieebot-banner-animated.html` ke dashboard (iframe atau embed)
-- [ ] Serve banner via Express static atau endpoint khusus
-
-### Step 6: Testing & Finalisasi
-- [ ] Test login/register flow
-- [ ] Test CRUD dashboard
-- [ ] Test welcome message
-- [ ] Test update history v1.4
-- [ ] Jalankan `npm start` dan cek semua fitur
+## Summary Perubahan
+1. **`routes/auth.js`** — File baru. Menyediakan `/auth/login`, `/auth/register`, `/auth/me`, `/auth/logout`. User disimpan di `data/users.json`. Akun owner hardcoded (default: `owner` / `zieebot123`, bisa diubah lewat env `OWNER_USERNAME` & `OWNER_PASSWORD`).
+2. **`index.js`** — Menambahkan `app.use('/auth', require('./routes/auth').router);` agar endpoint auth tersedia.
+3. **`script.js`** — `canEdit()` dan `canDelete()` sekarang mengizinkan role `owner` (full akses).
 

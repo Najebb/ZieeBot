@@ -21,11 +21,11 @@ function getInitial(n) {
 }
 
 function canEdit() {
-  return currentUser && (currentUser.role === 'admin' || currentUser.role === 'editor');
+  return currentUser && (currentUser.role === 'admin' || currentUser.role === 'editor' || currentUser.role === 'owner');
 }
 
 function canDelete() {
-  return currentUser && currentUser.role === 'admin';
+  return currentUser && (currentUser.role === 'admin' || currentUser.role === 'owner');
 }
 
 function getRoleBadge(role) {
@@ -1007,6 +1007,49 @@ function initMatrixRain() {
   draw();
 }
 
+function initDashboardHubRain() {
+  const canvas = document.getElementById('dashboardHubMatrix');
+  const section = document.getElementById('dashboards');
+  if (!canvas || !section) return;
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    const rect = section.getBoundingClientRect();
+    const width = Math.max(1, Math.floor(rect.width));
+    const height = Math.max(1, Math.floor(section.scrollHeight));
+    canvas.width = width;
+    canvas.height = height;
+    // #region agent log
+    fetch('http://127.0.0.1:7697/ingest/45b316d8-784b-4f1c-9e4f-f17566cac14d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2257f3'},body:JSON.stringify({sessionId:'2257f3',runId:'initial',hypothesisId:'H5',location:'script.js:initDashboardHubRain:resize',message:'dashboard hub matrix resized',data:{width,height},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+
+  const chars = '01DASHBOARDHUBZIEEBOT{}[]<>/';
+  const fontSize = 13;
+  let columns = Math.floor(canvas.width / fontSize);
+  let drops = Array.from({ length: columns }, () => Math.random() * -30);
+
+  function draw() {
+    ctx.fillStyle = 'rgba(0,0,0,0.08)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    columns = Math.floor(canvas.width / fontSize);
+    while (drops.length < columns) drops.push(Math.random() * -30);
+    ctx.font = `${fontSize}px 'Share Tech Mono', monospace`;
+    for (let i = 0; i < columns; i++) {
+      const char = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillStyle = `rgba(255,23,68,${0.16 + Math.random() * 0.2})`;
+      ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+      drops[i] += 0.34 + Math.random() * 0.28;
+      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
 function initParticles() {
   const canvas = document.getElementById('particleCanvas');
   if (!canvas) return;
@@ -1174,6 +1217,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   initBootSequence();
   initMatrixRain();
+  initDashboardHubRain();
   initParticles();
   initTypewriter();
   initHeroEntrance();
@@ -1197,14 +1241,57 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 const mainSections = ['hero','stats','features','dashboards','kelas','invite'];
 let spaActive = false;
+let currentSpaPage = null;
+let transitionOverlayEl = null;
+
+function debugSpaLog(hypothesisId, location, message, data = {}, runId = 'initial') {
+  // #region agent log
+  fetch('http://127.0.0.1:7697/ingest/45b316d8-784b-4f1c-9e4f-f17566cac14d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2257f3'},body:JSON.stringify({sessionId:'2257f3',runId,hypothesisId,location,message,data,timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
+}
+
+function ensureSpaTransitionOverlay() {
+  if (transitionOverlayEl) return transitionOverlayEl;
+  transitionOverlayEl = document.createElement('div');
+  transitionOverlayEl.id = 'spaTransitionOverlay';
+  transitionOverlayEl.style.cssText = `
+    position:fixed;inset:0;z-index:999997;pointer-events:none;opacity:0;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,23,68,0.05), rgba(255,23,68,0.05) 2px, transparent 2px, transparent 4px),
+      radial-gradient(ellipse at center, rgba(255,23,68,0.22), rgba(0,0,0,0.96) 65%);
+  `;
+  document.body.appendChild(transitionOverlayEl);
+  return transitionOverlayEl;
+}
+
+function playSpaTransition() {
+  const el = ensureSpaTransitionOverlay();
+  el.animate(
+    [
+      { opacity: 0, transform: 'scale(1.02)' },
+      { opacity: 1, transform: 'scale(1)' },
+      { opacity: 0, transform: 'scale(1.01)' }
+    ],
+    { duration: 420, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }
+  );
+}
 
 async function navigateTo(page) {
+  debugSpaLog('H1', 'script.js:navigateTo:entry', 'navigateTo called', {
+    page,
+    spaActive,
+    hash: window.location.hash || '',
+    path: window.location.pathname || ''
+  });
+
   if (page === 'home') {
+    playSpaTransition();
     exitSPA(); return;
   }
 
   const spaContainer = document.getElementById('spaContainer');
   if (!spaContainer) return;
+  playSpaTransition();
 
   // Hide all main sections
   mainSections.forEach(id => {
@@ -1236,11 +1323,33 @@ async function navigateTo(page) {
   `;
 
   spaActive = true;
+  currentSpaPage = page;
+  if (!history.state || history.state.page !== page || !history.state.spa) {
+    history.pushState({ spa: true, page }, '', `#dashboard-${page}`);
+    debugSpaLog('H3', 'script.js:navigateTo:pushState', 'history state pushed for spa page', {
+      page,
+      hash: window.location.hash || ''
+    });
+  }
   window.scrollTo(0, 0);
 
   try {
-    const file = page === 'economy' ? '/economy-dashboard.html' : '/music-dashboard.html';
+    const pageFileMap = {
+      economy: '/economy-dashboard.html',
+      music: '/music-dashboard.html',
+      kelas: '/kelas-dashboard.html'
+    };
+    const file = pageFileMap[page];
+    if (!file) {
+      throw new Error(`Unknown SPA page: ${page}`);
+    }
     const res  = await fetch(file);
+    debugSpaLog('H2', 'script.js:navigateTo:fetch', 'dashboard HTML fetch completed', {
+      page,
+      file,
+      ok: res.ok,
+      status: res.status
+    });
     const html = await res.text();
 
     const parser = new DOMParser();
@@ -1260,16 +1369,28 @@ async function navigateTo(page) {
       .map(s => s.textContent)
       .filter(Boolean)
       .join('\n;\n');
+    debugSpaLog('H1', 'script.js:navigateTo:extract', 'dashboard assets extracted', {
+      page,
+      styleCount: styleEls.length,
+      scriptLength: scriptContents.length
+    });
 
     // Inject content
     spaContainer.innerHTML = styleHtml + bodyHtml;
 
     // Execute scripts
     const scriptEl = document.createElement('script');
-    scriptEl.textContent = scriptContents;
+    scriptEl.textContent = `try{${scriptContents}}catch(e){fetch('http://127.0.0.1:7697/ingest/45b316d8-784b-4f1c-9e4f-f17566cac14d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2257f3'},body:JSON.stringify({sessionId:'2257f3',runId:'initial',hypothesisId:'H1',location:'script.js:navigateTo:scriptExecute',message:'dashboard script execution failed',data:{page:${JSON.stringify(page)},errorMessage:e&&e.message?e.message:String(e)},timestamp:Date.now()})}).catch(()=>{});throw e;}`;
     spaContainer.appendChild(scriptEl);
+    debugSpaLog('H1', 'script.js:navigateTo:scriptAppended', 'dashboard script appended', {
+      page
+    });
 
   } catch(err) {
+    debugSpaLog('H2', 'script.js:navigateTo:catch', 'navigateTo failed', {
+      page,
+      errorMessage: err.message
+    });
     spaContainer.innerHTML = `
       <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;">
         <div style="font-family:'Orbitron',monospace;color:#FF1744;font-size:1rem;">LOAD ERROR</div>
@@ -1286,6 +1407,13 @@ async function navigateTo(page) {
 }
 
 function exitSPA() {
+  playSpaTransition();
+  debugSpaLog('H3', 'script.js:exitSPA', 'exitSPA called', {
+    spaActive,
+    hash: window.location.hash || '',
+    path: window.location.pathname || ''
+  });
+
   const spaContainer = document.getElementById('spaContainer');
   if (spaContainer) {
     spaContainer.style.display = 'none';
@@ -1303,15 +1431,47 @@ function exitSPA() {
   if (nav)    nav.style.display = '';
 
   spaActive = false;
+  currentSpaPage = null;
   window.scrollTo(0, 0);
 }
 
 // Listen for back navigation from sub-dashboards
 window.addEventListener('spa-navigate', (e) => {
+  debugSpaLog('H4', 'script.js:spa-navigate:event', 'spa-navigate event received', {
+    detail: e.detail
+  });
   if (e.detail === 'home') exitSPA();
   else navigateTo(e.detail);
+});
+
+window.addEventListener('popstate', () => {
+  debugSpaLog('H3', 'script.js:popstate', 'browser back/forward detected', {
+    spaActive,
+    state: history.state || null,
+    hash: window.location.hash || '',
+    path: window.location.pathname || ''
+  });
+
+  const state = history.state;
+  if (state && state.spa && state.page) {
+    if (!spaActive || currentSpaPage !== state.page) {
+      navigateTo(state.page);
+    }
+    return;
+  }
+
+  if (spaActive) {
+    exitSPA();
+  }
 });
 
 // Expose globally
 window.navigateTo = navigateTo;
 window.exitSPA    = exitSPA;
+
+if (!history.state) {
+  history.replaceState({ spa: false, page: 'home' }, '', '#home');
+  debugSpaLog('H3', 'script.js:init:replaceState', 'initialized home history state', {
+    hash: window.location.hash || ''
+  });
+}

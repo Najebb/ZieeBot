@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ZieeBot — Akademik Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#080808; --bg2:#0f0f0f; --bg3:#141414; --line:#1a0000; --red:#8B0000; --red2:#FF1744; --txt:#e0e0e0; --dim:#888; --ok:#00ff88; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:'Rajdhani',sans-serif;min-height:100vh}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,23,68,.035) 2px,rgba(255,23,68,.035) 4px)}
+  #matrix{position:fixed;inset:0;pointer-events:none;opacity:.22;z-index:0}
+  .wrap{position:relative;z-index:1}
+  header{display:flex;justify-content:space-between;align-items:center;padding:1rem 1.5rem;border-bottom:1px solid var(--line);background:var(--bg2)}
+  .logo{font-family:'Orbitron',monospace;font-size:1.1rem;letter-spacing:3px;color:var(--red2);text-shadow:0 0 16px rgba(255,23,68,.4)}
+  .back{font-family:'Share Tech Mono',monospace;background:transparent;border:1px solid var(--red2);color:var(--red2);padding:.45rem 1rem;cursor:pointer}
+  .back:hover{background:rgba(255,23,68,.12)}
+  .glitch{position:relative;display:inline-block}
+  .glitch::before,.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;opacity:.7}
+  .glitch::before{color:#00ffff;clip-path:inset(0 0 55% 0);animation:g1 2.7s infinite linear}
+  .glitch::after{color:var(--red2);clip-path:inset(45% 0 0 0);animation:g2 2.9s infinite linear}
+  @keyframes g1{0%,100%{transform:translateX(0)}50%{transform:translateX(-2px)}}
+  @keyframes g2{0%,100%{transform:translateX(0)}50%{transform:translateX(2px)}}
+  .tabs{display:flex;gap:0;border-bottom:1px solid var(--line);overflow:auto;background:var(--bg2)}
+  .tab{border:none;background:transparent;color:var(--dim);padding:.9rem 1.1rem;white-space:nowrap;font-family:'Share Tech Mono',monospace;cursor:pointer}
+  .tab.active{color:var(--red2);border-bottom:2px solid var(--red2)}
+  .main{padding:1.2rem}
+  .panel{display:none}
+  .panel.active{display:block;animation:fade .25s ease}
+  @keyframes fade{from{opacity:.2;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--line)}
+  .card{background:var(--bg2);padding:1rem;border-top:2px solid var(--red2)}
+  .mini{font-family:'Share Tech Mono',monospace;color:var(--dim);font-size:.67rem;letter-spacing:1px}
+  .title{font-family:'Orbitron',monospace;color:#fff;font-size:.95rem;margin:.4rem 0}
+  .stat{font-family:'Orbitron',monospace;font-size:1.6rem;color:var(--red2)}
+  .table{width:100%;border-collapse:collapse;margin-top:1rem}
+  .table th{font-family:'Share Tech Mono',monospace;color:var(--red2);font-size:.67rem;text-align:left;padding:.55rem;border-bottom:1px solid var(--line)}
+  .table td{padding:.6rem;border-bottom:1px solid #151515}
+  .badge{font-family:'Share Tech Mono',monospace;font-size:.62rem;padding:2px 8px;border:1px solid}
+  .ok{color:var(--ok);border-color:var(--ok)}
+  .pending{color:var(--red2);border-color:var(--red2)}
+  .info{margin-top:.8rem;padding:.7rem;border:1px dashed #3e0000;background:rgba(139,0,0,.08);font-family:'Share Tech Mono',monospace;font-size:.7rem;color:#ff9aaa}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div class="wrap">
+  <header>
+    <div class="logo glitch" data-text="AKADEMIK DASHBOARD">AKADEMIK DASHBOARD</div>
+    <button class="back" onclick="window.dispatchEvent(new CustomEvent('spa-navigate',{detail:'home'}))">← BACK</button>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="overview">OVERVIEW</button>
+    <button class="tab" data-tab="mahasiswa">MAHASISWA</button>
+    <button class="tab" data-tab="jadwal">JADWAL</button>
+    <button class="tab" data-tab="tugas">TUGAS</button>
+    <button class="tab" data-tab="statistik">STATISTIK</button>
+  </div>
+
+  <main class="main">
+    <section class="panel active" id="p-overview">
+      <div class="grid">
+        <div class="card"><div class="mini">TOTAL MAHASISWA</div><div class="stat" id="ov-mhs">0</div><div class="mini">records</div></div>
+        <div class="card"><div class="mini">TOTAL JADWAL</div><div class="stat" id="ov-jadwal">0</div><div class="mini">kelas aktif</div></div>
+        <div class="card"><div class="mini">TOTAL TUGAS</div><div class="stat" id="ov-tugas">0</div><div class="mini">deadline terpantau</div></div>
+        <div class="card"><div class="mini">SELESAI</div><div class="stat" id="ov-done">0</div><div class="mini">status done</div></div>
+      </div>
+      <div class="info">Mode dashboard ini menyediakan <b>contoh data</b> otomatis jika data API kosong, agar alur mudah dipahami.</div>
+    </section>
+
+    <section class="panel" id="p-mahasiswa">
+      <table class="table"><thead><tr><th>NAMA</th><th>NIM</th><th>JURUSAN</th><th>STATUS</th></tr></thead><tbody id="tb-mahasiswa"></tbody></table>
+    </section>
+
+    <section class="panel" id="p-jadwal">
+      <table class="table"><thead><tr><th>HARI</th><th>JAM</th><th>MATA KULIAH</th><th>MAHASISWA</th></tr></thead><tbody id="tb-jadwal"></tbody></table>
+    </section>
+
+    <section class="panel" id="p-tugas">
+      <table class="table"><thead><tr><th>TUGAS</th><th>MAHASISWA</th><th>MATA KULIAH</th><th>DEADLINE</th><th>STATUS</th></tr></thead><tbody id="tb-tugas"></tbody></table>
+    </section>
+
+    <section class="panel" id="p-statistik">
+      <div class="grid" id="stat-box"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+const API_BASE = window.location.origin;
+const TOKEN = localStorage.getItem('zieebot_token') || '';
+const DEMO = {
+  mahasiswa: [
+    { nama:'Alya Putri', nim:'2024001', jurusan:'Teknik Informatika', aktif:true },
+    { nama:'Raka Pratama', nim:'2024002', jurusan:'Sistem Informasi', aktif:true },
+    { nama:'Nadya Sari', nim:'2024003', jurusan:'Desain Komunikasi Visual', aktif:false }
+  ],
+  jadwal: [
+    { hari:'Senin', jam:'08:00', matkul:'Algoritma', nama_mhs:'Alya Putri' },
+    { hari:'Rabu', jam:'10:00', matkul:'Basis Data', nama_mhs:'Raka Pratama' },
+    { hari:'Jumat', jam:'13:00', matkul:'UI/UX', nama_mhs:'Nadya Sari' }
+  ],
+  tugas: [
+    { nama:'Laporan Praktikum', nama_mhs:'Alya Putri', matkul:'Algoritma', deadline:'2026-05-01', status:'pending' },
+    { nama:'Mini Project', nama_mhs:'Raka Pratama', matkul:'Basis Data', deadline:'2026-05-02', status:'done' },
+    { nama:'Prototype App', nama_mhs:'Nadya Sari', matkul:'UI/UX', deadline:'2026-05-04', status:'pending' }
+  ]
+};
+
+async function api(ep){
+  try{
+    const r = await fetch(API_BASE + ep, { headers:{ 'x-auth-token': TOKEN } });
+    const j = await r.json();
+    return j && j.success ? j.data : null;
+  }catch{ return null; }
+}
+
+function tabInit(){
+  document.querySelectorAll('.tab').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('p-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+}
+
+function renderRows(id, rows, map){
+  const el = document.getElementById(id);
+  if (!rows.length) { el.innerHTML = '<tr><td colspan="6" class="mini">NO DATA</td></tr>'; return; }
+  el.innerHTML = rows.map(map).join('');
+}
+
+function renderStats(mhs, jadwal, tugas){
+  const done = tugas.filter(t=>t.status==='done').length;
+  document.getElementById('ov-mhs').textContent = mhs.length;
+  document.getElementById('ov-jadwal').textContent = jadwal.length;
+  document.getElementById('ov-tugas').textContent = tugas.length;
+  document.getElementById('ov-done').textContent = done;
+
+  const perMhs = mhs.map(m=>{
+    const total = tugas.filter(t=>t.nama_mhs===m.nama).length;
+    const mDone = tugas.filter(t=>t.nama_mhs===m.nama && t.status==='done').length;
+    const pct = total ? Math.round((mDone/total)*100) : 0;
+    return `<div class="card"><div class="mini">${m.nama}</div><div class="title">${m.jurusan}</div><div class="mini">Progress ${mDone}/${total} (${pct}%)</div></div>`;
+  });
+  document.getElementById('stat-box').innerHTML = perMhs.join('');
+}
+
+function initMatrix(){
+  const c = document.getElementById('matrix'); const x = c.getContext('2d');
+  const rs = ()=>{ c.width=innerWidth; c.height=innerHeight; }; rs(); addEventListener('resize', rs);
+  const chars='01AKADEMIKZIEEBOT<>[]{}'; const fs=13; let cols=Math.floor(c.width/fs); let drops=Array(cols).fill(0);
+  (function draw(){
+    x.fillStyle='rgba(0,0,0,0.08)'; x.fillRect(0,0,c.width,c.height);
+    x.fillStyle='rgba(255,23,68,0.35)'; x.font=fs+"px 'Share Tech Mono', monospace";
+    for(let i=0;i<drops.length;i++){ const ch=chars[Math.floor(Math.random()*chars.length)]; x.fillText(ch, i*fs, drops[i]*fs); if(drops[i]*fs>c.height&&Math.random()>0.975)drops[i]=0; drops[i]++; }
+    requestAnimationFrame(draw);
+  })();
+}
+
+async function init(){
+  tabInit(); initMatrix();
+  const [mhs,jadwal,tugas] = await Promise.all([api('/api/mahasiswa'), api('/api/jadwal'), api('/api/tugas')]);
+  const finalMhs = (mhs && mhs.length) ? mhs : DEMO.mahasiswa;
+  const finalJadwal = (jadwal && jadwal.length) ? jadwal : DEMO.jadwal;
+  const finalTugas = (tugas && tugas.length) ? tugas : DEMO.tugas;
+
+  renderRows('tb-mahasiswa', finalMhs, m=>`<tr><td>${m.nama}</td><td>${m.nim}</td><td>${m.jurusan}</td><td><span class="badge ${m.aktif?'ok':'pending'}">${m.aktif?'AKTIF':'NON-AKTIF'}</span></td></tr>`);
+  renderRows('tb-jadwal', finalJadwal, j=>`<tr><td>${j.hari}</td><td>${j.jam}</td><td>${j.matkul}</td><td>${j.nama_mhs||j.nama||'-'}</td></tr>`);
+  renderRows('tb-tugas', finalTugas, t=>`<tr><td>${t.nama}</td><td>${t.nama_mhs||'-'}</td><td>${t.matkul||'-'}</td><td>${t.deadline||'-'}</td><td><span class="badge ${t.status==='done'?'ok':'pending'}">${t.status==='done'?'DONE':'PENDING'}</span></td></tr>`);
+  renderStats(finalMhs, finalJadwal, finalTugas);
+}
+init();
+</script>
+</body>
+</html>

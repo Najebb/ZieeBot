@@ -1,7 +1,13 @@
+let readyExecuteCount = 0;
+
 module.exports = {
   name: 'ready',
   once: true,
   execute(client) {
+    readyExecuteCount += 1;
+    // #region agent log
+    fetch('http://127.0.0.1:7697/ingest/45b316d8-784b-4f1c-9e4f-f17566cac14d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2257f3'},body:JSON.stringify({sessionId:'2257f3',runId:'initial',hypothesisId:'H2',location:'events/ready.js:execute:start',message:'ready event execute called',data:{readyExecuteCount,userTag:client.user?.tag||null},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     console.log(`✅ ${client.user.tag} sudah online dan siap!`);
     console.log(`📊 Aktif di ${client.guilds.cache.size} server dengan ${client.users.cache.size} users.`);
 

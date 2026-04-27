@@ -93,7 +93,7 @@
   <ul class="nav-links">
     <li><a href="#stats">Stats</a></li>
     <li><a href="#features">Features</a></li>
-    <li><a href="#kelas">Dashboard</a></li>
+    <li><a href="#dashboards">Dashboard</a></li>
     <li><a href="#invite">Support</a></li>
   </ul>
   <!-- User info bar -->
@@ -192,6 +192,7 @@
 
 <!-- DASHBOARD HUB — navigasi ke Economy & Music -->
 <section id="dashboards" style="padding:60px 2rem 0;">
+  <canvas id="dashboardHubMatrix"></canvas>
   <div class="container">
     <div class="section-header">
       <span class="section-tag reveal">// CONTROL CENTER //</span>
@@ -243,7 +244,7 @@
       </div>
 
       <!-- Akademik Card -->
-      <div onclick="document.getElementById('kelas').scrollIntoView({behavior:'smooth'})" style="
+      <div onclick="navigateTo('kelas')" style="
         background:var(--dark);padding:2rem 1.75rem;cursor:pointer;
         position:relative;overflow:hidden;transition:background .25s;
         border-top:3px solid #FF1744;
@@ -257,7 +258,7 @@
           <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;background:#1a0008;border:1px solid #FF174440;color:#FF174499;padding:2px 8px;">tugas</span>
         </div>
         <div style="font-family:'Orbitron',monospace;font-size:.65rem;letter-spacing:2px;color:#FF1744;display:flex;align-items:center;gap:.5rem;">
-          SCROLL KE BAWAH <span style="font-size:.8rem;">↓</span>
+          BUKA DASHBOARD <span style="font-size:.8rem;">→</span>
         </div>
       </div>
     </div>
@@ -268,7 +269,7 @@
 <div id="spaContainer" style="display:none;min-height:100vh;"></div>
 
 <!-- DASHBOARD KELAS -->
-<section id="kelas">
+<section id="kelas" style="display:none;">
   <div class="container">
     <div class="section-header">
       <span class="section-tag reveal">// AKADEMIK //</span>

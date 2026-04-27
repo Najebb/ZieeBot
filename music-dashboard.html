@@ -559,6 +559,30 @@ let elapsed    = 0;
 let totalSec   = 0;
 let elapsedTimer = null;
 let historyAll = [];
+const DEMO_MUSIC = {
+  history: [
+    { title: 'Night Drive', duration: '3:21', requested_by: 'Alya', played_at: Math.floor(Date.now()/1000)-4200 },
+    { title: 'Cyber City', duration: '2:58', requested_by: 'Raka', played_at: Math.floor(Date.now()/1000)-2400 },
+    { title: 'Red Horizon', duration: '4:07', requested_by: 'Nadya', played_at: Math.floor(Date.now()/1000)-800 }
+  ],
+  topTracks: [
+    { title: 'Night Drive', duration: '3:21', play_count: 18 },
+    { title: 'Cyber City', duration: '2:58', play_count: 13 },
+    { title: 'Red Horizon', duration: '4:07', play_count: 9 }
+  ],
+  stats: { totalTracks: 3, totalPlays: 40, historyCount: 3 }
+};
+const DEMO_QUEUE = {
+  tracks: [
+    { title: 'Night Drive', duration: '3:21', requestedBy: 'Alya' },
+    { title: 'Cyber City', duration: '2:58', requestedBy: 'Raka' },
+    { title: 'Red Horizon', duration: '4:07', requestedBy: 'Nadya' }
+  ],
+  playing: true,
+  currentIndex: 0,
+  volume: 80,
+  loop: false
+};
 
 function setGuildId(val) {
   GUILD_ID = val.trim();
@@ -617,12 +641,34 @@ async function loadAll() {
     api('GET', '/api/music/stats' + gEp),
     api('GET', '/api/music/queue' + gEp)
   ]);
-  if (mRes && mRes.success) { musicData = mRes.data; historyAll = mRes.data.history || []; }
-  if (qRes && qRes.success) queueData = qRes.data;
+  const musicApiData = mRes && mRes.success ? (mRes.data || {}) : null;
+  const queueApiData = qRes && qRes.success ? (qRes.data || {}) : null;
+  const hasMusicData = Boolean(
+    musicApiData &&
+    ((Array.isArray(musicApiData.history) && musicApiData.history.length > 0) ||
+     (Array.isArray(musicApiData.topTracks) && musicApiData.topTracks.length > 0))
+  );
+  const hasQueueData = Boolean(
+    queueApiData &&
+    Array.isArray(queueApiData.tracks) &&
+    queueApiData.tracks.length > 0
+  );
+  // #region agent log
+  fetch('http://127.0.0.1:7697/ingest/45b316d8-784b-4f1c-9e4f-f17566cac14d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2257f3'},body:JSON.stringify({sessionId:'2257f3',runId:'initial',hypothesisId:'H6',location:'music-dashboard.html:loadAll',message:'music data source decision',data:{musicApiSuccess:Boolean(mRes&&mRes.success),queueApiSuccess:Boolean(qRes&&qRes.success),historyLen:musicApiData?.history?.length||0,topTracksLen:musicApiData?.topTracks?.length||0,queueLen:queueApiData?.tracks?.length||0,useDemoMusic:!hasMusicData,useDemoQueue:!hasQueueData},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
+
+  if (hasMusicData) { musicData = musicApiData; historyAll = musicApiData.history || []; }
+  else { musicData = DEMO_MUSIC; historyAll = DEMO_MUSIC.history; }
+  if (hasQueueData) queueData = queueApiData;
+  else queueData = DEMO_QUEUE;
 
   renderNowPlaying();
   renderQueueSidebar();
   updateMascot();
+
+  if (!hasMusicData || !hasQueueData) {
+    showNotif('Mode contoh data aktif (API kosong/tidak tersedia).');
+  }
 }
 
 // ── Now Playing ──────────────────────────────────────────────

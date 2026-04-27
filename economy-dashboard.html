@@ -519,6 +519,23 @@ async function api(method, ep, body) {
 
 // ── Helpers ──────────────────────────────────────────────────
 let econData = { users: [], transactions: [], shopItems: [], stats: {} };
+const DEMO_ECON = {
+  users: [
+    { user_id: '123456789012345678', balance: 12500, bank: 34000, last_daily: Date.now() - 86400000 },
+    { user_id: '223456789012345679', balance: 7800, bank: 9000, last_daily: Date.now() - 3600000 },
+    { user_id: '323456789012345670', balance: 2100, bank: 1500, last_daily: 0 }
+  ],
+  transactions: [
+    { id: 1, user_id: '123456789012345678', type: 'daily', amount: 500, note: 'Daily reward', created_at: Math.floor(Date.now()/1000)-7200 },
+    { id: 2, user_id: '223456789012345679', type: 'gamble_lose', amount: -700, note: 'Gamble fail', created_at: Math.floor(Date.now()/1000)-4200 },
+    { id: 3, user_id: '323456789012345670', type: 'admin_grant', amount: 1500, note: 'Event bonus', created_at: Math.floor(Date.now()/1000)-1800 }
+  ],
+  shopItems: [
+    { id: 1, name: 'VIP Role', description: 'Akses role premium', price: 5000, stock: 25, role_id: null },
+    { id: 2, name: 'Name Color', description: 'Custom name color', price: 2500, stock: -1, role_id: null }
+  ],
+  stats: { totalUsers: 3, totalSupply: 66900, txToday: 3, totalItems: 2 }
+};
 
 function showNotif(msg, isErr=false) {
   const el = document.getElementById('notif');
@@ -561,9 +578,23 @@ setInterval(() => document.getElementById('hdr-time').textContent = new Date().t
 // ── Load All ─────────────────────────────────────────────────
 async function loadAll() {
   const res = await api('GET', `/api/economy/overview${GUILD_ID ? '?guild_id='+GUILD_ID : ''}`);
-  if (res && res.success) {
-    econData = res.data;
+  const apiData = res && res.success ? (res.data || {}) : null;
+  const apiHasUsefulData = Boolean(
+    apiData &&
+    ((Array.isArray(apiData.users) && apiData.users.length > 0) ||
+     (Array.isArray(apiData.transactions) && apiData.transactions.length > 0) ||
+     (Array.isArray(apiData.shopItems) && apiData.shopItems.length > 0))
+  );
+  // #region agent log
+  fetch('http://127.0.0.1:7697/ingest/45b316d8-784b-4f1c-9e4f-f17566cac14d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2257f3'},body:JSON.stringify({sessionId:'2257f3',runId:'initial',hypothesisId:'H6',location:'economy-dashboard.html:loadAll',message:'economy data source decision',data:{apiSuccess:Boolean(res&&res.success),users:apiData?.users?.length||0,transactions:apiData?.transactions?.length||0,shopItems:apiData?.shopItems?.length||0,useDemo:!apiHasUsefulData},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
+  if (apiHasUsefulData) {
+    econData = apiData;
     loadOverview();
+  } else {
+    econData = DEMO_ECON;
+    loadOverview();
+    showNotif('Mode contoh data aktif (API kosong/tidak tersedia).');
   }
 }
 

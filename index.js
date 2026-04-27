@@ -44,6 +44,12 @@ const client = new Client({
 
 client.commands = new Collection();
 
+function debugLog(hypothesisId, location, message, data = {}, runId = 'initial') {
+  // #region agent log
+  fetch('http://127.0.0.1:7697/ingest/45b316d8-784b-4f1c-9e4f-f17566cac14d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2257f3'},body:JSON.stringify({sessionId:'2257f3',runId,hypothesisId,location,message,data,timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
+}
+
 // ========================
 // Load Events
 // ========================
@@ -104,6 +110,12 @@ function loginWithTimeout(token, timeoutMs = 30000) {
 }
 
 async function doLogin() {
+  debugLog('H3', 'index.js:doLogin:entry', 'doLogin invoked', {
+    loginAttempts,
+    maxAttempts,
+    hasToken: Boolean(token)
+  });
+
   if (!token) {
     console.error('⛔ DISCORD_TOKEN tidak ada.');
     return;
@@ -114,10 +126,15 @@ async function doLogin() {
 
   try {
     await loginWithTimeout(token, 30000);
+    debugLog('H1', 'index.js:doLogin:success', 'Discord login promise resolved', {
+      userTag: client.user?.tag || null
+    });
     console.log('✅ Login ke Discord berhasil!');
-    console.log(`✅ ${client.user.tag} sudah online dan siap!`);
     loginAttempts = 0;
   } catch (error) {
+    debugLog('H3', 'index.js:doLogin:error', 'Discord login failed', {
+      errorMessage: error.message
+    });
     console.error(`\n❌ Login gagal (attempt ${loginAttempts}/${maxAttempts}):`);
     console.error('   Error:', error.message);
 
@@ -159,6 +176,9 @@ app.use(express.static(path.join(__dirname))); // Serve static files (index.html
 
 // Store discord client untuk diakses API
 app.set('discordClient', client);
+
+// Auth Routes
+app.use('/auth', require('./routes/auth').router);
 
 // API Routes
 app.use('/api', require('./routes/api'));
