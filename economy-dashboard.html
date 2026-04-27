@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ZieeBot — Economy Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #070709;
+    --bg2:       #0e0b0f;
+    --bg3:       #140d14;
+    --border:    #8B000025;
+    --border2:   #8B000050;
+    --red:       #FF1744;
+    --red2:      #8B0000;
+    --red-dim:   #FF174466;
+    --red-glow:  #C62828;
+    --gold:      #f1c40f;
+    --green:     #00ff88;
+    --blue:      #4169ff;
+    --text:      #f0d0d8;
+    --text-dim:  #7a5560;
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-hd:   'Orbitron', monospace;
+    --font-body: 'Rajdhani', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; overflow-x: hidden; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(139,0,0,.018) 2px, rgba(139,0,0,.018) 4px);
+    pointer-events: none; z-index: 9999;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 2rem; border-bottom: 1px solid var(--border2);
+    background: var(--bg2); position: sticky; top: 0; z-index: 100;
+  }
+  .logo { font-family: var(--font-hd); font-size: 1.2rem; font-weight: 900; color: var(--red); letter-spacing: 4px; text-shadow: 0 0 20px var(--red-dim); }
+  .logo span { color: var(--text-dim); font-size: .7rem; display: block; letter-spacing: 2px; }
+  .header-right { display: flex; gap: 1rem; align-items: center; }
+  .back-btn {
+    font-family: var(--font-mono); font-size: .7rem; letter-spacing: 2px;
+    color: var(--text-dim); background: transparent; border: 1px solid var(--border2);
+    padding: .4rem 1rem; cursor: pointer; transition: all .2s;
+  }
+  .back-btn:hover { border-color: var(--red); color: var(--red); }
+  .header-status { display: flex; gap: 1.5rem; align-items: center; font-family: var(--font-mono); font-size: .75rem; color: var(--text-dim); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); display: inline-block; margin-right: 6px; box-shadow: 0 0 8px var(--red); animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* ── Nav tabs ── */
+  .nav-tabs { display: flex; border-bottom: 1px solid var(--border2); background: var(--bg2); padding: 0 2rem; overflow-x: auto; }
+  .tab-btn { font-family: var(--font-mono); font-size: .8rem; color: var(--text-dim); background: none; border: none; cursor: pointer; padding: .75rem 1.5rem; border-bottom: 2px solid transparent; transition: all .2s; white-space: nowrap; letter-spacing: 1px; }
+  .tab-btn:hover { color: var(--red); }
+  .tab-btn.active { color: var(--red); border-bottom-color: var(--red); text-shadow: 0 0 10px var(--red-dim); }
+
+  /* ── Main ── */
+  main { padding: 2rem; max-width: 1400px; margin: 0 auto; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .section-label { font-family: var(--font-mono); font-size: .7rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 1.5rem; }
+  .section-label::before { content: '$ '; color: var(--red); }
+
+  /* ── Cards ── */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .card { background: var(--bg2); border: 1px solid var(--border); padding: 1.25rem 1.5rem; position: relative; overflow: hidden; transition: border-color .2s; }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--red); box-shadow: 0 0 10px var(--red); }
+  .card:hover { border-color: var(--border2); }
+  .card-label { font-family: var(--font-mono); font-size: .65rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: .5rem; }
+  .card-value { font-family: var(--font-hd); font-size: 1.6rem; font-weight: 700; color: var(--red); }
+  .card-value.gold { color: var(--gold); }
+  .card-value.green { color: var(--green); }
+  .card-sub { font-family: var(--font-mono); font-size: .65rem; color: var(--text-dim); margin-top: .3rem; }
+
+  /* ── Table ── */
+  .table-wrap { background: var(--bg2); border: 1px solid var(--border); overflow: hidden; margin-bottom: 2rem; }
+  .table-head { display: flex; justify-content: space-between; align-items: center; padding: .75rem 1.25rem; border-bottom: 1px solid var(--border); background: var(--bg3); }
+  .table-title { font-family: var(--font-mono); font-size: .75rem; color: var(--red); letter-spacing: 2px; }
+  .search-box { background: var(--bg); border: 1px solid var(--border2); color: var(--text); font-family: var(--font-mono); font-size: .75rem; padding: .35rem .75rem; outline: none; width: 200px; transition: border-color .2s; }
+  .search-box:focus { border-color: var(--red); }
+  .search-box::placeholder { color: var(--text-dim); }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: var(--bg3); }
+  thead th { font-family: var(--font-mono); font-size: .7rem; color: var(--text-dim); text-align: left; padding: .6rem 1.25rem; letter-spacing: 1px; border-bottom: 1px solid var(--border); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+  tbody tr:hover { background: rgba(139,0,0,.06); }
+  tbody td { font-size: .85rem; padding: .7rem 1.25rem; font-family: var(--font-mono); }
+
+  /* ── Badges ── */
+  .badge { display: inline-block; padding: .15rem .6rem; font-size: .65rem; letter-spacing: 1px; font-family: var(--font-mono); border: 1px solid; }
+  .badge-red   { color: var(--red);   border-color: var(--red);   background: rgba(255,23,68,.05); }
+  .badge-gold  { color: var(--gold);  border-color: var(--gold);  background: rgba(241,196,15,.05); }
+  .badge-green { color: var(--green); border-color: var(--green); background: rgba(0,255,136,.05); }
+  .badge-blue  { color: var(--blue);  border-color: var(--blue);  background: rgba(65,105,255,.05); }
+  .zn     { color: var(--red); }
+  .zn-pos { color: var(--green); }
+  .zn-neg { color: #ff6b6b; }
+  .empty-row td { text-align: center; color: var(--text-dim); padding: 2rem; }
+
+  /* ── Forms ── */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .form-panel { background: var(--bg2); border: 1px solid var(--border); padding: 1.5rem; }
+  .form-panel h3 { font-family: var(--font-mono); font-size: .75rem; color: var(--red); letter-spacing: 2px; margin-bottom: 1.25rem; padding-bottom: .75rem; border-bottom: 1px solid var(--border); }
+  .form-group { margin-bottom: 1rem; }
+  .form-group label { display: block; font-family: var(--font-mono); font-size: .65rem; color: var(--text-dim); letter-spacing: 1px; margin-bottom: .4rem; }
+  .form-control { width: 100%; background: var(--bg); border: 1px solid var(--border2); color: var(--text); font-family: var(--font-mono); font-size: .8rem; padding: .6rem .9rem; outline: none; transition: border-color .2s; appearance: none; }
+  .form-control:focus { border-color: var(--red); box-shadow: 0 0 8px rgba(139,0,0,.2); }
+  select.form-control option { background: var(--bg2); }
+  .btn { font-family: var(--font-mono); font-size: .75rem; letter-spacing: 2px; padding: .65rem 1.5rem; border: 1px solid; cursor: pointer; transition: all .2s; background: transparent; text-transform: uppercase; width: 100%; }
+  .btn-red   { color: var(--red);   border-color: var(--red); }
+  .btn-red:hover { background: var(--red); color: #000; box-shadow: 0 0 20px var(--red-dim); }
+  .btn-gold  { color: var(--gold);  border-color: var(--gold); }
+  .btn-gold:hover { background: var(--gold); color: var(--bg); }
+  .btn-green { color: var(--green); border-color: var(--green); }
+  .btn-green:hover { background: var(--green); color: var(--bg); }
+  .btn-sm { padding: .35rem .9rem; font-size: .65rem; width: auto; }
+
+  /* ── Leaderboard ── */
+  .lb-item { display: flex; align-items: center; gap: 1rem; padding: .9rem 1.25rem; border-bottom: 1px solid var(--border); transition: background .15s; }
+  .lb-item:hover { background: rgba(139,0,0,.06); }
+  .lb-rank { font-family: var(--font-hd); font-size: 1.1rem; font-weight: 700; width: 40px; text-align: center; }
+  .lb-rank.r1 { color: #ffd700; } .lb-rank.r2 { color: #c0c0c0; } .lb-rank.r3 { color: #cd7f32; } .lb-rank.rn { color: var(--text-dim); }
+  .lb-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--bg3); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-family: var(--font-hd); font-size: .8rem; color: var(--red); }
+  .lb-info { flex: 1; }
+  .lb-name { font-size: .9rem; font-weight: 600; }
+  .lb-id   { font-family: var(--font-mono); font-size: .65rem; color: var(--text-dim); }
+  .lb-amount { font-family: var(--font-hd); font-size: 1rem; font-weight: 700; color: var(--gold); }
+
+  /* ── Mascot Z-NULL (recolored) ── */
+  .mascot-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
+  .mascot-stage { background: var(--bg2); border: 1px solid var(--border2); padding: 2rem 1.5rem 1.5rem; display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden; }
+  .mascot-stage::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 40% at 50% 80%, rgba(139,0,0,.09) 0%, transparent 70%), repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(139,0,0,.014) 3px, rgba(139,0,0,.014) 4px); pointer-events: none; }
+  .mascot-name { font-family: var(--font-hd); font-size: 1.4rem; font-weight: 900; color: var(--red); letter-spacing: 6px; text-shadow: 0 0 30px var(--red), 0 0 60px rgba(139,0,0,.4); margin-top: 1.5rem; position: relative; }
+  .mascot-subtitle { font-family: var(--font-mono); font-size: .65rem; color: var(--text-dim); letter-spacing: 3px; margin-top: .35rem; }
+  .mascot-status-row { display: flex; gap: 1rem; margin-top: 1rem; font-family: var(--font-mono); font-size: .65rem; }
+  .mstat { text-align: center; }
+  .mstat-val { color: var(--red); font-size: .85rem; font-family: var(--font-hd); }
+  .mstat-lbl { color: var(--text-dim); font-size: .55rem; letter-spacing: 1px; }
+  .robot-wrap { width: 220px; height: 280px; position: relative; cursor: pointer; }
+  .robot-wrap:hover .robot-body { filter: drop-shadow(0 0 18px var(--red)); }
+  .robot-glitch-r,.robot-glitch-b { position: absolute; inset: 0; pointer-events: none; }
+  .robot-glitch-r { animation: glitch-r 3.5s infinite; opacity: 0; }
+  .robot-glitch-b { animation: glitch-b 3.5s .15s infinite; opacity: 0; }
+  @keyframes glitch-r { 0%,85%,100%{opacity:0;transform:translate(0,0)} 86%{opacity:.6;transform:translate(4px,-2px);clip-path:inset(10% 0 70% 0)} 88%{opacity:.6;transform:translate(-3px,3px);clip-path:inset(55% 0 15% 0)} 90%{opacity:0} }
+  @keyframes glitch-b { 0%,85%,100%{opacity:0;transform:translate(0,0)} 87%{opacity:.5;transform:translate(-5px,2px);clip-path:inset(40% 0 35% 0)} 89%{opacity:.5;transform:translate(3px,-3px);clip-path:inset(75% 0 5% 0)} 91%{opacity:0} }
+  .glitch-frag { position: absolute; background: var(--red); opacity: 0; pointer-events: none; }
+  .glitch-frag:nth-child(1){width:40px;height:3px;top:30%;left:10%;animation:frag 3.5s .2s infinite}
+  .glitch-frag:nth-child(2){width:20px;height:2px;top:50%;right:5%;animation:frag 3.5s .6s infinite;background:var(--gold)}
+  .glitch-frag:nth-child(3){width:30px;height:2px;top:70%;left:60%;animation:frag 3.5s 1.1s infinite}
+  .glitch-frag:nth-child(4){width:15px;height:4px;top:20%;right:15%;animation:frag 3.5s 1.8s infinite;background:var(--blue)}
+  .glitch-frag:nth-child(5){width:50px;height:2px;top:80%;left:5%;animation:frag 3.5s .9s infinite}
+  @keyframes frag { 0%,80%,100%{opacity:0;transform:scaleX(0)} 82%{opacity:1;transform:scaleX(1) translateX(0)} 86%{opacity:1;transform:scaleX(1) translateX(8px)} 88%{opacity:0} }
+  .eye-l,.eye-r { animation: eye-flicker 4s infinite; }
+  .eye-r { animation-delay: .3s; }
+  @keyframes eye-flicker { 0%,88%,100%{opacity:1} 89%{opacity:0} 90%{opacity:1} 91%{opacity:0} 92%{opacity:1} }
+  .robot-body { animation: float 3s ease-in-out infinite; filter: drop-shadow(0 0 10px rgba(139,0,0,.5)); transition: filter .3s; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  .shoulder-light,.shoulder-light-r { animation: shoulder-pulse 1.5s alternate infinite; }
+  @keyframes shoulder-pulse { from{opacity:.4} to{opacity:1;filter:drop-shadow(0 0 6px var(--red))} }
+  .chest-scan { animation: chest-scan 2.5s linear infinite; }
+  @keyframes chest-scan { 0%{transform:translateY(-30px);opacity:0} 20%{opacity:.8} 80%{opacity:.8} 100%{transform:translateY(30px);opacity:0} }
+  .antenna-tip { animation: blink 1.2s infinite; }
+  .mascot-info { display: flex; flex-direction: column; gap: 1.25rem; }
+  .info-card { background: var(--bg2); border: 1px solid var(--border); padding: 1.25rem 1.5rem; position: relative; overflow: hidden; }
+  .info-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--red); box-shadow: 0 0 10px var(--red); }
+  .info-card-label { font-family: var(--font-mono); font-size: .65rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: .75rem; }
+  .tips-bubble { background: rgba(139,0,0,.05); border: 1px solid var(--border2); padding: 1.25rem; position: relative; min-height: 100px; }
+  .tips-bubble::before { content: '"'; position: absolute; top: -8px; left: 16px; font-family: var(--font-hd); font-size: 2.5rem; color: var(--red); line-height: 1; opacity: .4; }
+  .tips-type { font-family: var(--font-mono); font-size: .6rem; letter-spacing: 2px; margin-bottom: .6rem; }
+  .tips-type.tip  { color: var(--red); }
+  .tips-type.sass { color: var(--gold); }
+  .tips-type.warn { color: #ff6b6b; }
+  .tips-text { font-family: var(--font-body); font-size: .95rem; line-height: 1.6; color: var(--text); min-height: 60px; transition: opacity .3s; }
+  .tips-text.fade { opacity: 0; }
+  .tips-footer { display: flex; justify-content: space-between; align-items: center; margin-top: .75rem; font-family: var(--font-mono); font-size: .6rem; color: var(--text-dim); }
+  .tips-progress { height: 2px; background: var(--border2); margin-top: .75rem; position: relative; overflow: hidden; }
+  .tips-bar { position: absolute; left: 0; top: 0; height: 100%; background: var(--red); box-shadow: 0 0 6px var(--red); animation: tips-countdown 7s linear infinite; }
+  @keyframes tips-countdown { from{width:100%} to{width:0%} }
+  .diag-row { display: flex; justify-content: space-between; align-items: center; padding: .4rem 0; border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: .75rem; }
+  .diag-row:last-child { border-bottom: none; }
+  .diag-label { color: var(--text-dim); }
+  .diag-bar-wrap { display: flex; align-items: center; gap: .5rem; }
+  .diag-bar { width: 80px; height: 6px; background: var(--border2); position: relative; overflow: hidden; }
+  .diag-bar-fill { height: 100%; background: var(--red); box-shadow: 0 0 6px var(--red); transition: width 1s ease; }
+  .diag-bar-fill.warn { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+  .diag-bar-fill.crit { background: #ff4444; box-shadow: 0 0 6px #ff4444; animation: crit-pulse .8s infinite alternate; }
+  @keyframes crit-pulse { from{opacity:.5} to{opacity:1} }
+  .diag-val { color: var(--red); min-width: 40px; text-align: right; font-size: .7rem; }
+  .diag-val.warn { color: var(--gold); }
+  .diag-val.crit { color: #ff4444; }
+  .terminal-log { background: var(--bg); border: 1px solid var(--border); padding: 1rem; font-family: var(--font-mono); font-size: .72rem; color: var(--text-dim); height: 140px; overflow-y: auto; scroll-behavior: smooth; }
+  .terminal-log::-webkit-scrollbar { width: 4px; }
+  .terminal-log::-webkit-scrollbar-thumb { background: var(--border2); }
+  .log-line { margin-bottom: .3rem; line-height: 1.5; }
+  .log-line .log-time { color: var(--text-dim); margin-right: .5rem; }
+  .log-line .log-ok   { color: var(--green); }
+  .log-line .log-warn { color: var(--gold); }
+  .log-line .log-err  { color: #ff4444; }
+  .log-line .log-info { color: var(--blue); }
+
+  /* ── Notification ── */
+  #notif { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--bg2); border: 1px solid var(--red); padding: .75rem 1.5rem; font-family: var(--font-mono); font-size: .8rem; color: var(--red); z-index: 99999; transform: translateX(120%); transition: transform .3s; box-shadow: 0 0 20px rgba(139,0,0,.3); }
+  #notif.show { transform: translateX(0); }
+  #notif.err  { border-color: #ff4444; color: #ff4444; }
+
+  @media (max-width: 768px) {
+    main { padding: 1rem; }
+    .cards { grid-template-columns: 1fr 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .mascot-panel { grid-template-columns: 1fr; }
+    thead { display: none; }
+    tbody td { display: block; padding: .4rem 1rem; }
+    tbody td::before { content: attr(data-label) ': '; color: var(--text-dim); font-size: .65rem; }
+    tbody tr { margin-bottom: .5rem; border: 1px solid var(--border); display: block; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ZIEEBOT <span>ECONOMY DASHBOARD v2.0</span></div>
+  <div class="header-right">
+    <div class="header-status">
+      <span><span class="dot"></span>ONLINE</span>
+      <span id="hdr-total-users">0 USERS</span>
+      <span id="hdr-time" style="color:var(--red)"></span>
+    </div>
+    <button class="back-btn" onclick="window.dispatchEvent(new CustomEvent('spa-navigate',{detail:'home'}))">← BACK</button>
+  </div>
+</header>
+
+<nav class="nav-tabs">
+  <button class="tab-btn active" data-tab="overview">OVERVIEW</button>
+  <button class="tab-btn" data-tab="users">USER DATA</button>
+  <button class="tab-btn" data-tab="leaderboard">LEADERBOARD</button>
+  <button class="tab-btn" data-tab="transactions">TRANSAKSI</button>
+  <button class="tab-btn" data-tab="shop">TOKO</button>
+  <button class="tab-btn" data-tab="admin">ADMIN TOOLS</button>
+  <button class="tab-btn" data-tab="mascot" style="color:var(--red)">Z-NULL <span style="font-size:.55rem;color:#ff4444;margin-left:4px;animation:blink 1s infinite">◆ LIVE</span></button>
+</nav>
+
+<main>
+  <!-- OVERVIEW -->
+  <div class="tab-panel active" id="tab-overview">
+    <p class="section-label">SELECT * FROM economy_stats — OVERVIEW</p>
+    <div class="cards">
+      <div class="card"><div class="card-label">TOTAL USER</div><div class="card-value" id="stat-users">—</div><div class="card-sub">terdaftar di sistem</div></div>
+      <div class="card"><div class="card-label">TOTAL ZN BEREDAR</div><div class="card-value gold" id="stat-supply">— ZN</div><div class="card-sub">dompet + bank</div></div>
+      <div class="card"><div class="card-label">TRANSAKSI HARI INI</div><div class="card-value" id="stat-tx-today">—</div><div class="card-sub">total semua tipe</div></div>
+      <div class="card"><div class="card-label">TOTAL ITEM TOKO</div><div class="card-value" id="stat-items">—</div><div class="card-sub">item aktif</div></div>
+    </div>
+    <p class="section-label">RECENT TRANSACTIONS</p>
+    <div class="table-wrap">
+      <div class="table-head"><span class="table-title">TRANSAKSI TERBARU</span><button class="btn btn-red btn-sm" onclick="loadOverview()">REFRESH</button></div>
+      <table><thead><tr><th>ID</th><th>USER</th><th>TIPE</th><th>JUMLAH</th><th>CATATAN</th><th>WAKTU</th></tr></thead>
+      <tbody id="recent-tx-body"><tr class="empty-row"><td colspan="6">Memuat...</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- USER DATA -->
+  <div class="tab-panel" id="tab-users">
+    <p class="section-label">SELECT * FROM economy ORDER BY balance DESC</p>
+    <div class="table-wrap">
+      <div class="table-head"><span class="table-title">DATA USER</span><input class="search-box" id="user-search" type="text" placeholder="CARI USER ID..."/></div>
+      <table><thead><tr><th>USER ID</th><th>DOMPET</th><th>BANK</th><th>TOTAL</th><th>LAST DAILY</th><th>AKSI</th></tr></thead>
+      <tbody id="user-table-body"><tr class="empty-row"><td colspan="6">Memuat...</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="tab-panel" id="tab-leaderboard">
+    <p class="section-label">SELECT user_id, balance+bank AS total FROM economy ORDER BY total DESC LIMIT 10</p>
+    <div class="table-wrap">
+      <div class="table-head"><span class="table-title">🏆 TOP 10 TERKAYA</span><button class="btn btn-red btn-sm" onclick="loadLeaderboard()">REFRESH</button></div>
+      <div id="lb-list"></div>
+    </div>
+  </div>
+
+  <!-- TRANSAKSI -->
+  <div class="tab-panel" id="tab-transactions">
+    <p class="section-label">SELECT * FROM transactions ORDER BY created_at DESC</p>
+    <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+      <select class="form-control" id="tx-filter-type" style="width:160px">
+        <option value="">SEMUA TIPE</option>
+        <option value="daily">DAILY</option><option value="work">WORK</option>
+        <option value="crime">CRIME</option><option value="rob">ROB</option>
+        <option value="gamble">GAMBLE</option><option value="shop_buy">SHOP</option>
+        <option value="transfer">TRANSFER</option>
+        <option value="admin_grant">ADMIN GRANT</option><option value="admin_deduct">ADMIN DEDUCT</option>
+      </select>
+      <input class="form-control" id="tx-filter-user" type="text" placeholder="FILTER USER ID..." style="width:200px"/>
+      <button class="btn btn-red btn-sm" onclick="loadTransactions()">FILTER</button>
+    </div>
+    <div class="table-wrap">
+      <div class="table-head"><span class="table-title">RIWAYAT TRANSAKSI</span><span id="tx-count" style="font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim)">0 RECORDS</span></div>
+      <table><thead><tr><th>ID</th><th>USER</th><th>TIPE</th><th>JUMLAH</th><th>CATATAN</th><th>WAKTU</th></tr></thead>
+      <tbody id="tx-table-body"><tr class="empty-row"><td colspan="6">Memuat...</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- TOKO -->
+  <div class="tab-panel" id="tab-shop">
+    <p class="section-label">SELECT * FROM shop_items — ITEM MANAGEMENT</p>
+    <div class="table-wrap" style="margin-bottom:2rem">
+      <div class="table-head"><span class="table-title">ITEM TOKO</span><button class="btn btn-red btn-sm" onclick="loadShop()">REFRESH</button></div>
+      <table><thead><tr><th>ID</th><th>NAMA</th><th>DESKRIPSI</th><th>HARGA</th><th>STOK</th><th>ROLE ID</th><th>AKSI</th></tr></thead>
+      <tbody id="shop-table-body"><tr class="empty-row"><td colspan="7">Memuat...</td></tr></tbody></table>
+    </div>
+    <p class="section-label">INSERT INTO shop_items VALUES (...)</p>
+    <div class="form-grid">
+      <div class="form-panel">
+        <h3>TAMBAH ITEM BARU</h3>
+        <div class="form-group"><label>NAMA ITEM *</label><input class="form-control" id="item-name" type="text" placeholder="VIP Role, Badge, dll"/></div>
+        <div class="form-group"><label>DESKRIPSI</label><input class="form-control" id="item-desc" type="text" placeholder="Deskripsi singkat"/></div>
+        <div class="form-group"><label>HARGA (ZN) *</label><input class="form-control" id="item-price" type="number" min="1" placeholder="1000"/></div>
+        <div class="form-group"><label>STOK (-1 = UNLIMITED)</label><input class="form-control" id="item-stock" type="number" value="-1"/></div>
+        <div class="form-group"><label>ROLE ID (opsional)</label><input class="form-control" id="item-role" type="text" placeholder="Discord Role ID"/></div>
+        <button class="btn btn-red" onclick="addItem()">➕ TAMBAH ITEM</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN TOOLS -->
+  <div class="tab-panel" id="tab-admin">
+    <p class="section-label">ADMIN_TOOLS — RESTRICTED ACCESS</p>
+    <div class="form-grid">
+      <div class="form-panel">
+        <h3>⚡ TAMBAH ZENNY</h3>
+        <div class="form-group"><label>USER ID TARGET *</label><input class="form-control" id="add-uid" type="text" placeholder="Discord User ID"/></div>
+        <div class="form-group"><label>JUMLAH ZN *</label><input class="form-control" id="add-amount" type="number" min="1" placeholder="500"/></div>
+        <div class="form-group"><label>CATATAN</label><input class="form-control" id="add-note" type="text" placeholder="Bonus event, dll"/></div>
+        <button class="btn btn-gold" onclick="adminAddCoins()">⚡ TAMBAH ZENNY</button>
+      </div>
+      <div class="form-panel">
+        <h3>🔻 KURANGI ZENNY</h3>
+        <div class="form-group"><label>USER ID TARGET *</label><input class="form-control" id="rem-uid" type="text" placeholder="Discord User ID"/></div>
+        <div class="form-group"><label>JUMLAH ZN *</label><input class="form-control" id="rem-amount" type="number" min="1" placeholder="500"/></div>
+        <div class="form-group"><label>CATATAN</label><input class="form-control" id="rem-note" type="text" placeholder="Alasan pengurangan"/></div>
+        <button class="btn btn-red" onclick="adminRemoveCoins()">🔻 KURANGI ZENNY</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MASCOT Z-NULL (recolored) -->
+  <div class="tab-panel" id="tab-mascot">
+    <p class="section-label">Z-NULL ADVISORY UNIT — ECONOMY MODULE</p>
+    <div class="mascot-panel">
+      <div class="mascot-stage">
+        <div class="robot-wrap" onclick="znullClick()">
+          <div class="glitch-frag"></div><div class="glitch-frag"></div><div class="glitch-frag"></div>
+          <div class="glitch-frag"></div><div class="glitch-frag"></div>
+          <svg class="robot-body" width="220" height="280" viewBox="0 0 220 280" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="body-grad-r" cx="50%" cy="30%" r="70%">
+                <stop offset="0%" stop-color="#1a0510"/><stop offset="100%" stop-color="#0a0008"/>
+              </radialGradient>
+              <filter id="glow-red"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <clipPath id="chest-clip-r"><rect x="84" y="132" width="52" height="46" rx="3"/></clipPath>
+            </defs>
+            <!-- Antenna -->
+            <line x1="110" y1="18" x2="110" y2="4" stroke="#FF1744" stroke-width="2.5"/>
+            <circle cx="110" cy="4" r="4" fill="#FF1744" class="antenna-tip" filter="url(#glow-red)"/>
+            <line x1="110" y1="12" x2="96" y2="4" stroke="#FF174460" stroke-width="1.5"/>
+            <line x1="110" y1="12" x2="124" y2="4" stroke="#FF174460" stroke-width="1.5"/>
+            <!-- Head -->
+            <rect x="62" y="18" width="96" height="90" rx="10" fill="url(#body-grad-r)" stroke="#FF1744" stroke-width="1.5"/>
+            <rect x="70" y="26" width="80" height="74" rx="6" fill="#0a0008" stroke="#8B000040" stroke-width=".8"/>
+            <line x1="70" y1="68" x2="150" y2="68" stroke="#8B000040" stroke-width=".8"/>
+            <!-- Visor -->
+            <rect x="68" y="44" width="84" height="32" rx="6" fill="#0d0008" stroke="#FF174460" stroke-width="1"/>
+            <!-- Eyes -->
+            <g class="eye-l" filter="url(#glow-red)">
+              <rect x="76" y="50" width="28" height="16" rx="3" fill="#1a0010" stroke="#FF1744" stroke-width="1.5"/>
+              <rect x="79" y="53" width="22" height="10" rx="2" fill="#FF1744" opacity=".85"/>
+              <rect x="88" y="51" width="5" height="4" rx="1" fill="#FF1744"/>
+            </g>
+            <g class="eye-r" filter="url(#glow-red)">
+              <rect x="116" y="50" width="28" height="16" rx="3" fill="#1a0010" stroke="#FF1744" stroke-width="1.5"/>
+              <rect x="119" y="53" width="22" height="10" rx="2" fill="#FF1744" opacity=".85"/>
+              <rect x="128" y="51" width="5" height="4" rx="1" fill="#FF1744"/>
+            </g>
+            <!-- Scan on visor -->
+            <rect x="68" y="44" width="84" height="4" rx="1" fill="#FF1744" opacity=".12" class="chest-scan"/>
+            <!-- Mouth -->
+            <rect x="82" y="82" width="56" height="10" rx="2" fill="#0a0008" stroke="#FF174440" stroke-width="1"/>
+            <line x1="86" y1="87" x2="134" y2="87" stroke="#FF174466" stroke-width="1"/>
+            <line x1="93" y1="83" x2="93" y2="91" stroke="#FF174440" stroke-width="1"/>
+            <line x1="103" y1="83" x2="103" y2="91" stroke="#FF174440" stroke-width="1"/>
+            <line x1="113" y1="83" x2="113" y2="91" stroke="#FF174440" stroke-width="1"/>
+            <line x1="123" y1="83" x2="123" y2="91" stroke="#FF174440" stroke-width="1"/>
+            <!-- Head bolts -->
+            <circle cx="68" cy="28" r="3" fill="#0d0008" stroke="#FF174450" stroke-width="1"/>
+            <circle cx="152" cy="28" r="3" fill="#0d0008" stroke="#FF174450" stroke-width="1"/>
+            <circle cx="68" cy="104" r="3" fill="#0d0008" stroke="#FF174450" stroke-width="1"/>
+            <circle cx="152" cy="104" r="3" fill="#0d0008" stroke="#FF174450" stroke-width="1"/>
+            <!-- Neck -->
+            <rect x="98" y="108" width="24" height="12" rx="3" fill="#0e000a" stroke="#FF174440" stroke-width="1"/>
+            <line x1="104" y1="108" x2="104" y2="120" stroke="#FF174430" stroke-width="1"/>
+            <line x1="110" y1="108" x2="110" y2="120" stroke="#FF174430" stroke-width="1"/>
+            <line x1="116" y1="108" x2="116" y2="120" stroke="#FF174430" stroke-width="1"/>
+            <!-- Shoulders -->
+            <rect x="28" y="120" width="42" height="28" rx="6" fill="url(#body-grad-r)" stroke="#FF174450" stroke-width="1.5"/>
+            <rect x="32" y="124" width="34" height="20" rx="4" fill="#0a0008"/>
+            <circle class="shoulder-light" cx="42" cy="134" r="5" fill="#FF1744" filter="url(#glow-red)"/>
+            <line x1="50" y1="134" x2="60" y2="134" stroke="#FF174466" stroke-width="1.5"/>
+            <rect x="150" y="120" width="42" height="28" rx="6" fill="url(#body-grad-r)" stroke="#FF174450" stroke-width="1.5"/>
+            <rect x="154" y="124" width="34" height="20" rx="4" fill="#0a0008"/>
+            <circle class="shoulder-light-r" cx="178" cy="134" r="5" fill="#FF1744" filter="url(#glow-red)"/>
+            <line x1="160" y1="134" x2="170" y2="134" stroke="#FF174466" stroke-width="1.5"/>
+            <!-- Torso -->
+            <rect x="70" y="118" width="80" height="82" rx="6" fill="url(#body-grad-r)" stroke="#FF174466" stroke-width="1.5"/>
+            <rect x="76" y="124" width="68" height="4" rx="1" fill="#FF174408" stroke="#FF174420" stroke-width=".5"/>
+            <rect x="76" y="192" width="68" height="4" rx="1" fill="#FF174408" stroke="#FF174420" stroke-width=".5"/>
+            <!-- Chest screen -->
+            <rect x="80" y="132" width="60" height="50" rx="4" fill="#0d0008" stroke="#FF174450" stroke-width="1.5"/>
+            <rect x="82" y="134" width="56" height="46" rx="3" fill="#080005"/>
+            <g clip-path="url(#chest-clip-r)">
+              <rect x="82" y="152" width="56" height="2" fill="#FF1744" opacity=".3" class="chest-scan"/>
+            </g>
+            <rect x="86" y="170" width="6" height="8" rx="1" fill="#FF1744" opacity=".6"/>
+            <rect x="95" y="162" width="6" height="16" rx="1" fill="#FF1744" opacity=".8"/>
+            <rect x="104" y="157" width="6" height="21" rx="1" fill="#FF1744"/>
+            <rect x="113" y="164" width="6" height="14" rx="1" fill="#FF1744" opacity=".7"/>
+            <rect x="122" y="160" width="6" height="18" rx="1" fill="#FF1744" opacity=".5"/>
+            <text x="110" y="143" text-anchor="middle" fill="#FF174466" font-family="monospace" font-size="5">ECONOMY.SYS</text>
+            <!-- Core -->
+            <circle cx="110" cy="188" r="6" fill="#0d0008" stroke="#FF174466" stroke-width="1.5"/>
+            <circle cx="110" cy="188" r="3" fill="#FF1744" filter="url(#glow-red)" class="antenna-tip"/>
+            <!-- Arms -->
+            <rect x="28" y="148" width="20" height="60" rx="5" fill="url(#body-grad-r)" stroke="#FF174440" stroke-width="1.5"/>
+            <rect x="31" y="158" width="14" height="4" rx="1" fill="#FF174420"/>
+            <rect x="31" y="165" width="14" height="4" rx="1" fill="#FF174420"/>
+            <rect x="26" y="207" width="24" height="16" rx="4" fill="#0e000a" stroke="#FF174450" stroke-width="1.5"/>
+            <rect x="172" y="148" width="20" height="60" rx="5" fill="url(#body-grad-r)" stroke="#FF174440" stroke-width="1.5"/>
+            <rect x="175" y="158" width="14" height="4" rx="1" fill="#FF174420"/>
+            <rect x="175" y="165" width="14" height="4" rx="1" fill="#FF174420"/>
+            <rect x="170" y="207" width="24" height="16" rx="4" fill="#0e000a" stroke="#FF174450" stroke-width="1.5"/>
+            <!-- Legs -->
+            <rect x="82" y="200" width="56" height="12" rx="3" fill="#0a0008" stroke="#FF174440" stroke-width="1"/>
+            <rect x="80" y="212" width="26" height="55" rx="5" fill="url(#body-grad-r)" stroke="#FF174440" stroke-width="1.5"/>
+            <rect x="84" y="223" width="18" height="4" rx="1" fill="#FF174420"/>
+            <rect x="84" y="231" width="18" height="4" rx="1" fill="#FF174420"/>
+            <rect x="76" y="266" width="34" height="14" rx="4" fill="#0e000a" stroke="#FF174450" stroke-width="1.5"/>
+            <rect x="114" y="212" width="26" height="55" rx="5" fill="url(#body-grad-r)" stroke="#FF174440" stroke-width="1.5"/>
+            <rect x="118" y="223" width="18" height="4" rx="1" fill="#FF174420"/>
+            <rect x="118" y="231" width="18" height="4" rx="1" fill="#FF174420"/>
+            <rect x="110" y="266" width="34" height="14" rx="4" fill="#0e000a" stroke="#FF174450" stroke-width="1.5"/>
+            <!-- Damage -->
+            <path d="M34 126 L40 132 L36 138" stroke="#FF174440" stroke-width="1" fill="none"/>
+            <path d="M142 26 L146 34 L142 38" stroke="#FF414130" stroke-width="1" fill="none"/>
+          </svg>
+          <div class="robot-glitch-r"><svg width="220" height="280" viewBox="0 0 220 280"><use href="#robot-main" style="fill:rgba(255,0,60,.4)"/></svg></div>
+          <div class="robot-glitch-b"><svg width="220" height="280" viewBox="0 0 220 280"><use href="#robot-main" style="fill:rgba(139,0,0,.3)"/></svg></div>
+        </div>
+        <div class="mascot-name">Z-NULL</div>
+        <div class="mascot-subtitle">ECONOMY ADVISORY UNIT // DAMAGED</div>
+        <div class="mascot-status-row">
+          <div class="mstat"><div class="mstat-val">87%</div><div class="mstat-lbl">INTEGRITY</div></div>
+          <div class="mstat"><div class="mstat-val" id="tip-counter">0</div><div class="mstat-lbl">TIPS SENT</div></div>
+          <div class="mstat"><div class="mstat-val" style="color:#ff4444">3</div><div class="mstat-lbl">ERRORS</div></div>
+        </div>
+        <div class="terminal-log" id="robot-log" style="width:100%;margin-top:1.5rem">
+          <div class="log-line"><span class="log-time">[BOOT]</span> <span class="log-ok">Z-NULL ADVISORY MODULE LOADED</span></div>
+          <div class="log-line"><span class="log-time">[SYS]</span> <span class="log-info">economy.db — CONNECTED</span></div>
+          <div class="log-line"><span class="log-time">[WARN]</span> <span class="log-warn">Sector 7 memory corrupted. Attempting patch...</span></div>
+          <div class="log-line"><span class="log-time">[ERR]</span> <span class="log-err">Sarcasm module overclocked. Cannot disable.</span></div>
+        </div>
+      </div>
+      <div class="mascot-info">
+        <div class="info-card">
+          <div class="info-card-label">// ADVISORY FEED — AUTO-ROTATE 7s</div>
+          <div class="tips-bubble">
+            <div class="tips-type tip" id="tips-type-label">TIP</div>
+            <div class="tips-text" id="tips-text">Memuat pesan dari Z-NULL...</div>
+            <div class="tips-footer"><span id="tips-index">001 / 024</span><span style="color:var(--red)">Z-NULL v0.9</span></div>
+            <div class="tips-progress"><div class="tips-bar" id="tips-bar"></div></div>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">// SYSTEM DIAGNOSTICS</div>
+          <div class="diag-row"><span class="diag-label">CPU USAGE</span><div class="diag-bar-wrap"><div class="diag-bar"><div class="diag-bar-fill warn" style="width:73%"></div></div><span class="diag-val warn">73%</span></div></div>
+          <div class="diag-row"><span class="diag-label">MEMORY</span><div class="diag-bar-wrap"><div class="diag-bar"><div class="diag-bar-fill" style="width:41%"></div></div><span class="diag-val">41%</span></div></div>
+          <div class="diag-row"><span class="diag-label">SARCASM LVL</span><div class="diag-bar-wrap"><div class="diag-bar"><div class="diag-bar-fill crit" style="width:99%"></div></div><span class="diag-val crit">MAX</span></div></div>
+          <div class="diag-row"><span class="diag-label">EMPATHY</span><div class="diag-bar-wrap"><div class="diag-bar"><div class="diag-bar-fill crit" style="width:2%"></div></div><span class="diag-val crit">2%</span></div></div>
+          <div class="diag-row"><span class="diag-label">ECONOMY DB</span><div class="diag-bar-wrap"><div class="diag-bar"><div class="diag-bar-fill" style="width:100%"></div></div><span class="diag-val">OK</span></div></div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">// ECONOMY SNAPSHOT</div>
+          <div class="diag-row"><span class="diag-label">RICHEST USER</span><span class="diag-val" id="znull-rich">—</span></div>
+          <div class="diag-row"><span class="diag-label">TOTAL SUPPLY</span><span class="diag-val" id="znull-supply">—</span></div>
+          <div class="diag-row"><span class="diag-label">TX HARI INI</span><span class="diag-val" id="znull-tx">—</span></div>
+          <div class="diag-row"><span class="diag-label">GAMBLERS RUGI</span><span class="diag-val crit" id="znull-gamblers">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="notif"></div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────
+const API_BASE = window.location.origin;
+const GUILD_ID = localStorage.getItem('zieebot_guild_id') || '';
+const AUTH_TOKEN = localStorage.getItem('zieebot_token') || '';
+
+async function api(method, ep, body) {
+  const opts = { method, headers: { 'Content-Type':'application/json', 'x-auth-token': AUTH_TOKEN } };
+  if (body) opts.body = JSON.stringify(body);
+  try {
+    const r = await fetch(API_BASE + ep, opts);
+    return await r.json();
+  } catch(e) { return { success: false, error: e.message }; }
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+let econData = { users: [], transactions: [], shopItems: [], stats: {} };
+
+function showNotif(msg, isErr=false) {
+  const el = document.getElementById('notif');
+  el.textContent = msg; el.className = 'show' + (isErr ? ' err' : '');
+  clearTimeout(el._t); el._t = setTimeout(() => el.className = '', 3000);
+}
+function fmtZN(n) { return (n>=0?'+':'') + n.toLocaleString('id-ID') + ' ZN'; }
+function fmtTime(ts) { return new Date(ts*1000).toLocaleString('id-ID',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+function shortId(id) { return id.length > 10 ? id.slice(0,6)+'...'+id.slice(-4) : id; }
+function txBadge(type) {
+  const map = {
+    daily:['DAILY','gold'], work:['WORK','green'], crime_success:['CRIME✓','green'],
+    crime_fail:['CRIME✗','red'], rob_success:['ROB✓','red'], rob_fail:['ROB✗','red'],
+    gamble_win:['GAMBLE✓','green'], gamble_lose:['GAMBLE✗','red'],
+    shop_buy:['SHOP','blue'], transfer_in:['TRANSFER IN','green'], transfer_out:['TRANSFER OUT','red'],
+    admin_grant:['ADMIN+','gold'], admin_deduct:['ADMIN-','red'], robbed:['DIRAMPOK','red'],
+    deposit:['DEPOSIT','blue'], withdraw:['WITHDRAW','blue'],
+  };
+  const [label, color] = map[type] ?? [type.toUpperCase(),'red'];
+  return `<span class="badge badge-${color}">${label}</span>`;
+}
+
+// ── Tab switching ────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'leaderboard') loadLeaderboard();
+    if (btn.dataset.tab === 'transactions') loadTransactions();
+    if (btn.dataset.tab === 'shop') loadShop();
+    if (btn.dataset.tab === 'users') loadUsers();
+  });
+});
+
+// ── Clock ────────────────────────────────────────────────────
+setInterval(() => document.getElementById('hdr-time').textContent = new Date().toLocaleTimeString('id-ID'), 1000);
+
+// ── Load All ─────────────────────────────────────────────────
+async function loadAll() {
+  const res = await api('GET', `/api/economy/overview${GUILD_ID ? '?guild_id='+GUILD_ID : ''}`);
+  if (res && res.success) {
+    econData = res.data;
+    loadOverview();
+  }
+}
+
+function loadOverview() {
+  const { users, transactions, stats } = econData;
+  document.getElementById('stat-users').textContent    = stats.totalUsers || 0;
+  document.getElementById('stat-supply').textContent   = (stats.totalSupply||0).toLocaleString('id-ID') + ' ZN';
+  document.getElementById('stat-tx-today').textContent = stats.txToday || 0;
+  document.getElementById('stat-items').textContent    = stats.totalItems || 0;
+  document.getElementById('hdr-total-users').textContent = (stats.totalUsers||0) + ' USERS';
+
+  const sorted = [...users].sort((a,b) => (b.balance+b.bank)-(a.balance+a.bank));
+  document.getElementById('znull-rich').textContent    = sorted[0] ? shortId(sorted[0].user_id) : '—';
+  document.getElementById('znull-supply').textContent  = (stats.totalSupply||0).toLocaleString('id-ID') + ' ZN';
+  document.getElementById('znull-tx').textContent      = stats.txToday || 0;
+  const gamblers = transactions.filter(t => t.type === 'gamble_lose').length;
+  document.getElementById('znull-gamblers').textContent = gamblers;
+
+  const tbody = document.getElementById('recent-tx-body');
+  if (!transactions.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Belum ada transaksi</td></tr>'; return; }
+  tbody.innerHTML = transactions.slice(0,10).map(t => `
+    <tr>
+      <td data-label="ID"><span class="badge badge-red">#${t.id}</span></td>
+      <td data-label="USER"><span style="font-size:.75rem;color:var(--text-dim)">${shortId(t.user_id)}</span></td>
+      <td data-label="TIPE">${txBadge(t.type)}</td>
+      <td data-label="JUMLAH"><span class="${t.amount>=0?'zn-pos':'zn-neg'}">${fmtZN(t.amount)}</span></td>
+      <td data-label="CATATAN" style="color:var(--text-dim);font-size:.75rem">${t.note||''}</td>
+      <td data-label="WAKTU" style="color:var(--text-dim);font-size:.75rem">${fmtTime(t.created_at)}</td>
+    </tr>`).join('');
+}
+
+function loadUsers() {
+  const { users } = econData;
+  renderUserTable(users);
+  document.getElementById('user-search').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    renderUserTable(users.filter(u => u.user_id.toLowerCase().includes(q)));
+  });
+}
+
+function renderUserTable(data) {
+  const tbody = document.getElementById('user-table-body');
+  if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Tidak ada data</td></tr>'; return; }
+  tbody.innerHTML = data.map(u => `
+    <tr>
+      <td data-label="USER ID"><span style="font-family:var(--font-mono);font-size:.75rem">${u.user_id}</span></td>
+      <td data-label="DOMPET"><span class="zn">⚡ ${(u.balance||0).toLocaleString('id-ID')} ZN</span></td>
+      <td data-label="BANK"><span style="color:var(--gold)">🏦 ${(u.bank||0).toLocaleString('id-ID')} ZN</span></td>
+      <td data-label="TOTAL"><strong>⚡ ${((u.balance||0)+(u.bank||0)).toLocaleString('id-ID')} ZN</strong></td>
+      <td data-label="LAST DAILY"><span style="font-size:.75rem;color:var(--text-dim)">${u.last_daily ? new Date(u.last_daily).toLocaleDateString('id-ID') : '—'}</span></td>
+      <td data-label="AKSI"><button class="btn btn-gold btn-sm" onclick="quickAdd('${u.user_id}')">+ZN</button></td>
+    </tr>`).join('');
+}
+
+function loadLeaderboard() {
+  const sorted = [...econData.users].sort((a,b) => ((b.balance||0)+(b.bank||0))-((a.balance||0)+(a.bank||0)));
+  const medal = i => i===0?'🥇':i===1?'🥈':i===2?'🥉':`#${i+1}`;
+  const rankClass = i => i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+  document.getElementById('lb-list').innerHTML = sorted.slice(0,10).map((u,i) => `
+    <div class="lb-item">
+      <div class="lb-rank ${rankClass(i)}">${medal(i)}</div>
+      <div class="lb-avatar">${u.user_id.slice(-2)}</div>
+      <div class="lb-info"><div class="lb-name">User ${u.user_id.slice(0,8)}...</div><div class="lb-id">${u.user_id}</div></div>
+      <div class="lb-amount">⚡ ${((u.balance||0)+(u.bank||0)).toLocaleString('id-ID')} ZN</div>
+    </div>`).join('');
+}
+
+function loadTransactions() {
+  const typeFilter = document.getElementById('tx-filter-type').value;
+  const userFilter = document.getElementById('tx-filter-user').value.toLowerCase();
+  let data = [...econData.transactions];
+  if (typeFilter) data = data.filter(t => t.type.includes(typeFilter));
+  if (userFilter) data = data.filter(t => t.user_id.toLowerCase().includes(userFilter));
+  document.getElementById('tx-count').textContent = data.length + ' RECORDS';
+  const tbody = document.getElementById('tx-table-body');
+  if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Tidak ada transaksi</td></tr>'; return; }
+  tbody.innerHTML = data.map(t => `
+    <tr>
+      <td><span class="badge badge-red">#${t.id}</span></td>
+      <td><span style="font-size:.75rem;color:var(--text-dim)">${shortId(t.user_id)}</span></td>
+      <td>${txBadge(t.type)}</td>
+      <td><span class="${t.amount>=0?'zn-pos':'zn-neg'}">${fmtZN(t.amount)}</span></td>
+      <td style="color:var(--text-dim);font-size:.75rem">${t.note||''}</td>
+      <td style="color:var(--text-dim);font-size:.75rem">${fmtTime(t.created_at)}</td>
+    </tr>`).join('');
+}
+
+function loadShop() {
+  const tbody = document.getElementById('shop-table-body');
+  if (!econData.shopItems.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Toko kosong</td></tr>'; return; }
+  tbody.innerHTML = econData.shopItems.map(i => `
+    <tr>
+      <td><span class="badge badge-red">#${i.id}</span></td>
+      <td><strong>${i.name}</strong></td>
+      <td style="color:var(--text-dim);font-size:.75rem">${i.description||'-'}</td>
+      <td><span class="zn">⚡ ${(i.price||0).toLocaleString('id-ID')} ZN</span></td>
+      <td><span class="badge ${i.stock===-1?'badge-green':i.stock>0?'badge-gold':'badge-red'}">${i.stock===-1?'∞':i.stock}</span></td>
+      <td style="font-size:.75rem;color:var(--text-dim)">${i.role_id||'-'}</td>
+      <td><button class="btn btn-red btn-sm" onclick="deleteItem(${i.id})">HAPUS</button></td>
+    </tr>`).join('');
+}
+
+async function addItem() {
+  const name = document.getElementById('item-name').value.trim();
+  const price = parseInt(document.getElementById('item-price').value);
+  if (!name || !price) return showNotif('Nama dan harga wajib diisi!', true);
+  const res = await api('POST', '/api/economy/shop/add', { guild_id: GUILD_ID||'global', name, description: document.getElementById('item-desc').value, price, stock: parseInt(document.getElementById('item-stock').value)||-1, role_id: document.getElementById('item-role').value||null });
+  if (res && res.success) { showNotif(`Item "${name}" berhasil ditambahkan!`); await loadAll(); loadShop(); ['item-name','item-price','item-desc','item-role'].forEach(id => document.getElementById(id).value = ''); }
+  else showNotif(res?.error || 'Gagal!', true);
+}
+
+async function deleteItem(id) {
+  const res = await api('DELETE', `/api/economy/shop/${id}`);
+  if (res && res.success) { showNotif('Item dihapus.'); await loadAll(); loadShop(); }
+  else showNotif(res?.error||'Gagal!', true);
+}
+
+async function adminAddCoins() {
+  const uid = document.getElementById('add-uid').value.trim();
+  const amount = parseInt(document.getElementById('add-amount').value);
+  const note = document.getElementById('add-note').value || 'Admin grant';
+  if (!uid || !amount) return showNotif('User ID dan jumlah wajib!', true);
+  const res = await api('POST', '/api/economy/admin/add', { guild_id: GUILD_ID||'global', user_id: uid, amount, note });
+  if (res && res.success) { showNotif(`⚡ +${amount.toLocaleString('id-ID')} ZN ke ${shortId(uid)}`); await loadAll(); document.getElementById('add-amount').value = ''; document.getElementById('add-note').value = ''; }
+  else showNotif(res?.error||'Gagal!', true);
+}
+
+async function adminRemoveCoins() {
+  const uid = document.getElementById('rem-uid').value.trim();
+  const amount = parseInt(document.getElementById('rem-amount').value);
+  const note = document.getElementById('rem-note').value || 'Admin deduct';
+  if (!uid || !amount) return showNotif('User ID dan jumlah wajib!', true);
+  const res = await api('POST', '/api/economy/admin/deduct', { guild_id: GUILD_ID||'global', user_id: uid, amount, note });
+  if (res && res.success) { showNotif(`🔻 -${amount.toLocaleString('id-ID')} ZN dari ${shortId(uid)}`); await loadAll(); }
+  else showNotif(res?.error||'Gagal!', true);
+}
+
+function quickAdd(uid) {
+  document.getElementById('add-uid').value = uid;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('[data-tab="admin"]').classList.add('active');
+  document.getElementById('tab-admin').classList.add('active');
+  document.getElementById('add-uid').focus();
+  showNotif('USER ID telah diisi di Admin Tools');
+}
+
+// ── Z-NULL Tips ──────────────────────────────────────────────
+const TIPS = [
+  {type:'sass',text:'Kamu kehilangan uang dari gambling? Mengejutkan. Sungguh tidak terduga.'},
+  {type:'tip',text:'Simpan ZN di bank sebelum tidur. Jangan-jangan ada yang rob kamu waktu offline.'},
+  {type:'warn',text:'Stok item habis? Tambah di tab TOKO sebelum user komplain.'},
+  {type:'sass',text:'User dengan balance 0 masih main gambling. Kurasa sudah tidak ada yang bisa diselamatkan.'},
+  {type:'tip',text:'Gunakan Admin Tools untuk beri reward event. Jangan lupa tambah catatan yang jelas.'},
+  {type:'sass',text:'Economy sehat = user aktif. Economy kamu... sudahlah.'},
+  {type:'warn',text:'Transaksi admin_deduct yang terlalu sering bisa membuat user tidak senang.'},
+  {type:'tip',text:'Item dengan stok terbatas menciptakan urgensi. Strategi marketing 101.'},
+];
+let tipIdx = 0, tipCount = 0;
+function rotateTip() {
+  const el = document.getElementById('tips-text');
+  const tl = document.getElementById('tips-type-label');
+  const ix = document.getElementById('tips-index');
+  el.classList.add('fade');
+  setTimeout(() => {
+    tipIdx = (tipIdx + 1) % TIPS.length; tipCount++;
+    const tip = TIPS[tipIdx];
+    tl.textContent = tip.type.toUpperCase(); tl.className = 'tips-type ' + tip.type;
+    el.textContent = tip.text; el.classList.remove('fade');
+    ix.textContent = String(tipIdx+1).padStart(3,'0') + ' / ' + String(TIPS.length).padStart(3,'0');
+    document.getElementById('tip-counter').textContent = tipCount;
+    const log = document.getElementById('robot-log');
+    const line = document.createElement('div'); line.className = 'log-line';
+    line.innerHTML = `<span class="log-time">[${new Date().toLocaleTimeString('id-ID')}]</span> <span class="log-ok">TIP SENT: ${tip.text.slice(0,40)}...</span>`;
+    log.appendChild(line); log.scrollTop = log.scrollHeight;
+  }, 300);
+  document.getElementById('tips-bar').style.animation = 'none';
+  setTimeout(() => document.getElementById('tips-bar').style.animation = '', 50);
+}
+setInterval(rotateTip, 7000);
+setTimeout(() => { const t = TIPS[0]; document.getElementById('tips-text').textContent = t.text; document.getElementById('tips-type-label').textContent = t.type.toUpperCase(); }, 200);
+
+function znullClick() {
+  const r = document.querySelector('.robot-body');
+  r.style.filter = 'drop-shadow(0 0 30px #FF1744)';
+  setTimeout(() => r.style.filter = '', 500);
+  showNotif('Z-NULL: ...jangan sentuh saya.');
+}
+
+// Init
+loadAll();
+setInterval(loadAll, 30000);
+</script>
+</body>
+</html>
