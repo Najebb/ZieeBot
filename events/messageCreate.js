@@ -27,6 +27,12 @@ const updateHistory = [
     title: '🔄 Update Bot Jebb v1.3',
     desc: '**Fitur Baru:**\n• 🎮 Minigame `/tebakangka` & `/quiz` — Dapat XP!\n• 📢 `/announce` & `/dm` — Kirim pesan ke channel & DM\n• ⏰ `/schedule` — Kirim pesan terjadwal\n• 💤 `/afk` — Status AFK dengan auto-reply\n• 👋 Welcome message otomatis saat member baru join',
     color: '#e91e63'
+  },
+  {
+    version: 'v1.4',
+    title: '🔄 Update Bot Jebb v1.4',
+    desc: '**Fitur Baru:**\n• 🎓 **Web Dashboard Akademik** — CRUD mahasiswa, jadwal, tugas via web\n• 🔐 **Sistem Login Dashboard** — Register & login publik dengan JWT\n• 🖼️ **Bot Banner Profile** — Banner animasi di profil bot\n• 👋 **Welcome Message** — Sambutan otomatis saat member baru join\n• 📊 **Dashboard Overview** — Statistik real-time mahasiswa & tugas',
+    color: '#9b59b6'
   }
 ];
 
@@ -119,7 +125,7 @@ module.exports = {
     const command = args.shift().toLowerCase();
 
     if (command === 'update') {
-      let page = updateHistory.length - 1; // Mulai dari update terbaru (v1.3)
+      let page = updateHistory.length - 1; // Mulai dari update terbaru (v1.4)
       const embed = createUpdateEmbed(page, client);
       const buttons = createUpdateButtons(page);
 

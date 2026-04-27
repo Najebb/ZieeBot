@@ -1,270 +1,222 @@
 /* ================================================
-   ZieeBot Website v2.0 — script.js (API Version)
+   ZieeBot Website v2.1 — script.js (v1.4 Update)
    ================================================ */
 
-// API Base URL (auto-detect)
 const API_BASE = window.location.origin;
 
 /* ===== STATE ===== */
 let mahasiswaData = [];
 let isLoading = false;
-
-/* ===== UTILITIES ===== */
-function getInitial(n) {
-  return n.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
-}
+let currentUser = null;
+let authToken = localStorage.getItem('zb_token') || null;
+let deleteTarget = null;
 
 /* ===== API HELPERS ===== */
 async function apiGet(endpoint) {
   try {
-    const res = await fetch(`${API_BASE}/api${endpoint}`);
-    const data = await res.json();
-    return data.success ? data.data : [];
+    const headers = {};
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    const res = await fetch(`${API_BASE}/api${endpoint}`, { headers });
+    return await res.json();
   } catch (err) {
     console.error('API Error:', err);
-    return [];
+    return { success: false, error: err.message };
   }
 }
 
 async function apiPost(endpoint, body) {
   try {
-    const res = await fetch(`${API_BASE}/api${endpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+    const headers = { 'Content-Type': 'application/json' };
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    const res = await fetch(`${API_BASE}/api${endpoint}`, { method: 'POST', headers, body: JSON.stringify(body) });
     return await res.json();
   } catch (err) {
-    console.error('API Error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+async function apiPut(endpoint, body) {
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    const res = await fetch(`${API_BASE}/api${endpoint}`, { method: 'PUT', headers, body: JSON.stringify(body) });
+    return await res.json();
+  } catch (err) {
     return { success: false, error: err.message };
   }
 }
 
 async function apiPatch(endpoint, body) {
   try {
-    const res = await fetch(`${API_BASE}/api${endpoint}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+    const headers = { 'Content-Type': 'application/json' };
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    const res = await fetch(`${API_BASE}/api${endpoint}`, { method: 'PATCH', headers, body: JSON.stringify(body) });
     return await res.json();
   } catch (err) {
-    console.error('API Error:', err);
     return { success: false, error: err.message };
   }
+}
+
+async function apiDelete(endpoint) {
+  try {
+    const headers = {};
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    const res = await fetch(`${API_BASE}/api${endpoint}`, { method: 'DELETE', headers });
+    return await res.json();
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+/* ===== AUTH ===== */
+function updateNavAuth() {
+  const navUser = document.getElementById('navUser');
+  const navLoginBtn = document.getElementById('navLoginBtn');
+  const navLogoutBtn = document.getElementById('navLogoutBtn');
+  if (!navUser) return;
+  if (currentUser) {
+    navUser.textContent = `👤 ${currentUser.display_name || currentUser.username}`;
+    navUser.style.display = 'inline';
+    navLoginBtn.style.display = 'none';
+    navLogoutBtn.style.display = 'inline-block';
+  } else {
+    navUser.style.display = 'none';
+    navLoginBtn.style.display = 'inline-block';
+    navLogoutBtn.style.display = 'none';
+  }
+}
+
+async function checkAuth() {
+  if (!authToken) { updateNavAuth(); return; }
+  const data = await apiGet('/auth/me');
+  if (data.success && data.user) {
+    currentUser = data.user;
+  } else {
+    authToken = null; currentUser = null;
+    localStorage.removeItem('zb_token');
+  }
+  updateNavAuth();
+}
+
+function openLoginModal() {
+  document.getElementById('authModalOverlay').classList.add('active');
+  switchAuthTab('login');
+}
+
+function closeAuthModal(e) {
+  if (e.target === document.getElementById('authModalOverlay')) closeAuthModalDirect();
+}
+function closeAuthModalDirect() {
+  document.getElementById('authModalOverlay').classList.remove('active');
+}
+
+function switchAuthTab(tab) {
+  const tLogin = document.getElementById('tabLogin');
+  const tReg = document.getElementById('tabRegister');
+  if (tLogin) tLogin.classList.toggle('active', tab === 'login');
+  if (tReg) tReg.classList.toggle('active', tab === 'register');
+  const fLogin = document.getElementById('authLoginForm');
+  const fReg = document.getElementById('authRegisterForm');
+  if (fLogin) fLogin.style.display = tab === 'login' ? 'block' : 'none';
+  if (fReg) fReg.style.display = tab === 'register' ? 'block' : 'none';
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const msgEl = document.getElementById('loginMsg');
+  if (!username || !password) {
+    showAuthMsg(msgEl, '⚠ Username dan password wajib diisi!', '#ffbb00');
+    return;
+  }
+  const result = await apiPost('/auth/login', { username, password });
+  if (result.success) {
+    authToken = result.token; currentUser = result.user;
+    localStorage.setItem('zb_token', authToken);
+    updateNavAuth(); closeAuthModalDirect();
+  } else {
+    showAuthMsg(msgEl, '✕ ' + (result.error || 'Login gagal'), '#ff1744');
+  }
+}
+
+async function doRegister() {
+  const username = document.getElementById('reg-username').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const display_name = document.getElementById('reg-display').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const msgEl = document.getElementById('regMsg');
+  if (!username || !password) {
+    showAuthMsg(msgEl, '⚠ Username dan password wajib diisi!', '#ffbb00');
+    return;
+  }
+  if (password.length < 6) {
+    showAuthMsg(msgEl, '⚠ Password minimal 6 karakter!', '#ffbb00');
+    return;
+  }
+  const result = await apiPost('/auth/register', { username, password, email, display_name });
+  if (result.success) {
+    showAuthMsg(msgEl, '✓ Akun berhasil dibuat! Silakan login.', '#00ff88');
+    setTimeout(() => switchAuthTab('login'), 1500);
+  } else {
+    showAuthMsg(msgEl, '✕ ' + (result.error || 'Registrasi gagal'), '#ff1744');
+  }
+}
+
+function doLogout() {
+  authToken = null; currentUser = null;
+  localStorage.removeItem('zb_token');
+  updateNavAuth();
+}
+
+function showAuthMsg(el, text, color) {
+  if (!el) return;
+  el.textContent = text; el.style.display = 'block';
+  el.style.borderColor = color; el.style.color = color;
+  setTimeout(() => el.style.display = 'none', 4000);
 }
 
 /* ===== LOAD DATA ===== */
 async function loadMahasiswa() {
   isLoading = true;
-  mahasiswaData = await apiGet('/mahasiswa');
+  const data = await apiGet('/mahasiswa');
+  mahasiswaData = data.success ? data.data : [];
   isLoading = false;
   renderMhs(mahasiswaData);
 }
 
 async function loadJadwal() {
-  const rows = await apiGet('/jadwal');
-  renderJadwal(rows);
+  const data = await apiGet('/jadwal');
+  renderJadwal(data.success ? data.data : []);
 }
 
 async function loadTugas() {
-  const rows = await apiGet('/tugas');
-  renderTugasFromAPI(rows);
+  const data = await apiGet('/tugas');
+  renderTugasFromAPI(data.success ? data.data : []);
 }
 
 async function loadStats() {
-  const stats = await apiGet('/stats');
-  if (stats) {
-    // Update stat cards dengan data real dari bot
+  const data = await apiGet('/stats');
+  if (data.success && data.data) {
+    const s = data.data;
     const statNums = document.querySelectorAll('.stat-num');
-    if (statNums[0]) statNums[0].dataset.target = stats.servers || 0;
-    if (statNums[1]) statNums[1].dataset.target = stats.users || 0;
-    if (statNums[2]) statNums[2].dataset.target = stats.status === 'online' ? 99 : 0;
-    if (statNums[3]) statNums[3].dataset.target = stats.commands || 0;
+    if (statNums[0]) statNums[0].dataset.target = s.servers || 0;
+    if (statNums[1]) statNums[1].dataset.target = s.users || 0;
+    if (statNums[2]) statNums[2].dataset.target = s.status === 'online' ? 99 : 0;
+    if (statNums[3]) statNums[3].dataset.target = s.commands || 0;
   }
 }
 
-/* ================================================
-   ANIMASI HERO — TYPEWRITER
-   ================================================ */
-function initTypewriter() {
-  const subtitleEl = document.getElementById('hero-typewriter');
-  if (!subtitleEl) return;
-
-  const phrases = [
-    'MULTI-PURPOSE DISCORD BOT',
-    'MODERATION • MUSIC • FUN',
-    'AKADEMIK DASHBOARD',
-    'POWERED BY DISCORD.JS v14',
-    'READY TO SERVE YOUR SERVER'
-  ];
-  let phraseIdx = 0, charIdx = 0, deleting = false;
-
-  function tick() {
-    const current = phrases[phraseIdx];
-    if (!deleting) {
-      subtitleEl.textContent = current.slice(0, charIdx + 1);
-      charIdx++;
-      if (charIdx === current.length) {
-        deleting = true;
-        setTimeout(tick, 1800);
-        return;
-      }
-    } else {
-      subtitleEl.textContent = current.slice(0, charIdx - 1);
-      charIdx--;
-      if (charIdx === 0) {
-        deleting = false;
-        phraseIdx = (phraseIdx + 1) % phrases.length;
-      }
-    }
-    setTimeout(tick, deleting ? 45 : 90);
+async function loadDashboardStats() {
+  const data = await apiGet('/dashboard/stats');
+  if (data.success && data.data) {
+    const s = data.data;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('dashTotalMhs', s.totalMahasiswa || 0);
+    set('dashAktifMhs', s.aktifMahasiswa || 0);
+    set('dashTotalJadwal', s.totalJadwal || 0);
+    set('dashPendingTugas', s.tugasPending || 0);
+    set('dashDoneTugas', s.tugasDone || 0);
   }
-  tick();
-}
-
-/* ================================================
-   ANIMASI HERO — MATRIX RAIN CANVAS
-   ================================================ */
-function initMatrixRain() {
-  const canvas = document.getElementById('matrixCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-
-  function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  const chars = '01ZIEEBOT<>{}[]//\\--DISCORD.JS//ONLINE//API//QUERY';
-  const fontSize = 13;
-  let columns = Math.floor(canvas.width / fontSize);
-  let drops = Array.from({ length: columns }, () => Math.random() * -50);
-
-  function draw() {
-    ctx.fillStyle = 'rgba(0,0,0,0.06)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    columns = Math.floor(canvas.width / fontSize);
-    while (drops.length < columns) drops.push(Math.random() * -50);
-
-    ctx.font = `${fontSize}px 'Share Tech Mono', monospace`;
-    drops.forEach((y, i) => {
-      const char = chars[Math.floor(Math.random() * chars.length)];
-      if (y > 0 && y < canvas.height / fontSize) {
-        ctx.fillStyle = '#FF1744';
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = '#FF1744';
-      } else {
-        const alpha = 0.08 + Math.random() * 0.12;
-        ctx.fillStyle = `rgba(139,0,0,${alpha})`;
-        ctx.shadowBlur = 0;
-      }
-      ctx.fillText(char, i * fontSize, y * fontSize);
-      drops[i] += 0.4 + Math.random() * 0.3;
-      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-        drops[i] = 0;
-      }
-    });
-    ctx.shadowBlur = 0;
-    requestAnimationFrame(draw);
-  }
-  draw();
-}
-
-/* ================================================
-   ANIMASI — FLOATING PARTICLES
-   ================================================ */
-function initParticles() {
-  const canvas = document.getElementById('particleCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-
-  function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  const particles = Array.from({ length: 60 }, () => ({
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    vx: (Math.random() - 0.5) * 0.4,
-    vy: (Math.random() - 0.5) * 0.4,
-    size: Math.random() * 1.5 + 0.3,
-    opacity: Math.random() * 0.2 + 0.04
-  }));
-
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    particles.forEach(p => {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255,23,68,${p.opacity})`;
-      ctx.fill();
-      p.x += p.vx; p.y += p.vy;
-      if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-      if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-    });
-    requestAnimationFrame(draw);
-  }
-  draw();
-}
-
-/* ================================================
-   ANIMASI — AVATAR BOT SCAN LINE
-   ================================================ */
-function initAvatarAnimation() {
-  const scanEl = document.getElementById('avatarScanLine');
-  if (!scanEl) return;
-
-  let y = 0, dir = 1;
-  function tick() {
-    y += dir * 1.2;
-    if (y > 100) dir = -1;
-    if (y < 0) dir = 1;
-    scanEl.setAttribute('y', y + '%');
-    requestAnimationFrame(tick);
-  }
-  tick();
-
-  const eyes = document.querySelectorAll('.bot-eye');
-  function blink() {
-    eyes.forEach(e => {
-      e.style.transform = 'scaleY(0.05)';
-      setTimeout(() => e.style.transform = 'scaleY(1)', 120);
-    });
-    setTimeout(blink, 2800 + Math.random() * 2000);
-  }
-  setTimeout(blink, 1500);
-
-  const statusTexts = ['ONLINE', 'READY', 'ACTIVE', 'SERVING', 'v2.0.0'];
-  let sIdx = 0;
-  const statusEl = document.getElementById('avatarStatusText');
-  if (statusEl) {
-    setInterval(() => {
-      sIdx = (sIdx + 1) % statusTexts.length;
-      statusEl.textContent = statusTexts[sIdx];
-    }, 2200);
-  }
-}
-
-/* ================================================
-   ANIMASI — HERO ENTRANCE
-   ================================================ */
-function initHeroEntrance() {
-  const items = document.querySelectorAll('.hero-enter');
-  items.forEach((el, i) => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(30px)';
-    setTimeout(() => {
-      el.style.transition = 'opacity 0.7s ease, transform 0.7s ease';
-      el.style.opacity = '1';
-      el.style.transform = 'translateY(0)';
-    }, 300 + i * 150);
-  });
 }
 
 /* ===== TAB SYSTEM ===== */
@@ -274,19 +226,28 @@ function switchTab(id) {
     b.classList.toggle('active', ids[i] === id);
   });
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('tab-' + id).classList.add('active');
-
+  const panel = document.getElementById('tab-' + id);
+  if (panel) panel.classList.add('active');
   if (id === 'mahasiswa') loadMahasiswa();
   if (id === 'jadwal') loadJadwal();
   if (id === 'tugas') loadTugas();
 }
 
 /* ===== RENDER MAHASISWA ===== */
+function getInitial(n) {
+  return n.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
+
 function renderMhs(data) {
-  document.getElementById('mhsCount').textContent = data.length;
-  document.getElementById('mhsGrid').innerHTML = data.length
-    ? data.map((m, idx) => `
-      <div class="mhs-card" onclick="openModal(${idx})">
+  const countEl = document.getElementById('mhsCount');
+  const gridEl = document.getElementById('mhsGrid');
+  if (countEl) countEl.textContent = data.length;
+  if (!gridEl) return;
+  gridEl.innerHTML = data.length ? data.map((m, idx) => {
+    const doneCount = m.tugas ? m.tugas.filter(t => t.status === 'done').length : 0;
+    const totalCount = m.tugas ? m.tugas.length : 0;
+    return `
+      <div class="mhs-card">
         <div class="mhs-card-corner"></div>
         <div class="mhs-avatar">${getInitial(m.nama)}<span class="${m.aktif ? 'online-dot' : 'offline-dot'}"></span></div>
         <div class="mhs-name">${m.nama}</div>
@@ -299,10 +260,14 @@ function renderMhs(data) {
             <div style="font-size:0.72rem;font-family:'Share Tech Mono',monospace;color:${m.aktif ? '#00ff88' : '#555'};margin-top:2px;">${m.aktif ? '● AKTIF' : '○ NON-AKTIF'}</div>
           <div style="text-align:right;">
             <div class="mhs-meta-label">TUGAS</div>
-            <div class="mhs-meta-val" style="margin-top:2px;">${m.tugas.filter(t => t.status === 'done').length}/${m.tugas.length} ✓</div>
+            <div class="mhs-meta-val" style="margin-top:2px;">${doneCount}/${totalCount} ✓</div>
         </div>
-    `).join('')
-    : '<div style="padding:40px;text-align:center;color:var(--text-dim);font-family:\'Share Tech Mono\',monospace;">NO RECORDS FOUND</div>';
+        <div class="mhs-actions">
+          <button class="action-btn edit" onclick="openEditMhs(${m.id})">✏️</button>
+          <button class="action-btn detail" onclick="openModal(${idx})">👁</button>
+          <button class="action-btn delete" onclick="confirmDelete('mahasiswa', ${m.id}, '${m.nama.replace(/'/g, "\\'")}')">🗑</button>
+        </div>`;
+  }).join('') : '<div style="padding:40px;text-align:center;color:var(--text-dim);font-family:\'Share Tech Mono\',monospace;">NO RECORDS FOUND</div>';
 }
 
 function filterMhs() {
@@ -315,29 +280,29 @@ function filterMhs() {
 }
 
 /* ===== JADWAL ===== */
-const HARI_ORDER = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-
 function renderJadwal(rows) {
-  document.getElementById('jadwalList').innerHTML = rows.length
-    ? rows.map(r => `
-      <div class="jadwal-row">
-        <span class="jadwal-hari">${r.hari.toUpperCase()}</span>
-        <span class="jadwal-time">${r.jam}</span>
-        <span class="jadwal-matkul">${r.matkul}</span>
-        <span class="jadwal-who">${r.nama_mhs || r.nama}</span>
-      </div>
-    `).join('')
-    : '<div style="padding:40px;text-align:center;color:var(--text-dim);font-family:\'Share Tech Mono\',monospace;font-size:0.8rem;">NO RECORDS FOUND</div>';
+  const el = document.getElementById('jadwalList');
+  if (!el) return;
+  el.innerHTML = rows.length ? rows.map(r => `
+    <div class="jadwal-row">
+      <span class="jadwal-hari">${r.hari.toUpperCase()}</span>
+      <span class="jadwal-time">${r.jam}</span>
+      <span class="jadwal-matkul">${r.matkul}</span>
+      <span class="jadwal-who">${r.nama_mhs || r.nama || '—'}</span>
+      <div class="jadwal-actions">
+        <button class="action-btn edit" onclick="openEditJadwal(${r.id}, '${r.hari}', '${r.matkul.replace(/'/g, "\\'")}', '${r.jam}')">✏️</button>
+        <button class="action-btn delete" onclick="confirmDelete('jadwal', ${r.id}, '${r.matkul.replace(/'/g, "\\'")}')">🗑</button>
+      </div>`).join('') : '<div style="padding:40px;text-align:center;color:var(--text-dim);font-family:\'Share Tech Mono\',monospace;font-size:0.8rem;">NO RECORDS FOUND</div>';
 }
 
 function filterJadwal() {
   const q = document.getElementById('searchJadwal').value.toLowerCase();
-  // Reload dan filter client-side
-  apiGet('/jadwal').then(rows => {
+  apiGet('/jadwal').then(data => {
+    const rows = data.success ? data.data : [];
     const filtered = rows.filter(r =>
       r.hari.toLowerCase().includes(q) ||
       r.matkul.toLowerCase().includes(q) ||
-      (r.nama_mhs || r.nama).toLowerCase().includes(q)
+      (r.nama_mhs || r.nama || '').toLowerCase().includes(q)
     );
     renderJadwal(filtered);
   });
@@ -348,23 +313,20 @@ let tugasFilter = 'all';
 
 function renderTugasFromAPI(rows) {
   const filtered = tugasFilter === 'all' ? rows : rows.filter(r => r.status === tugasFilter);
-  document.getElementById('tugasBody').innerHTML = filtered.length
-    ? filtered.map(r => `
-      <tr>
-        <td>${r.nama}</td>
-        <td style="color:var(--text-dim);">${r.nama_mhs || '—'}</td>
-        <td style="color:var(--text-dim);">${r.matkul || '—'}</td>
-        <td style="font-family:'Share Tech Mono',monospace;font-size:0.78rem;">${r.deadline || '—'}</td>
-        <td>
-          <span class="badge badge-${r.status === 'done' ? 'done' : 'pending'}" 
-                onclick="toggleTugasStatus(${r.id}, '${r.status}')"
-                style="cursor:pointer;">
-            ${r.status === 'done' ? 'SELESAI' : 'PENDING'}
-          </span>
-        </td>
-      </tr>
-    `).join('')
-    : '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-dim);font-family:\'Share Tech Mono\',monospace;font-size:0.8rem;">NO RECORDS FOUND</td></tr>';
+  const el = document.getElementById('tugasBody');
+  if (!el) return;
+  el.innerHTML = filtered.length ? filtered.map(r => `
+    <tr>
+      <td>${r.nama}</td>
+      <td style="color:var(--text-dim);">${r.nama_mhs || '—'}</td>
+      <td style="color:var(--text-dim);">${r.matkul || '—'}</td>
+      <td style="font-family:'Share Tech Mono',monospace;font-size:0.78rem;">${r.deadline || '—'}</td>
+      <td><span class="badge badge-${r.status === 'done' ? 'done' : 'pending'}" onclick="toggleTugasStatus(${r.id}, '${r.status}')" style="cursor:pointer;">${r.status === 'done' ? 'SELESAI' : 'PENDING'}</span></td>
+      <td>
+        <button class="action-btn edit" onclick="openEditTugas(${r.id}, '${r.nama.replace(/'/g, "\\'")}', '${(r.matkul || '').replace(/'/g, "\\'")}', '${r.deadline || ''}', '${r.status}')">✏️</button>
+        <button class="action-btn delete" onclick="confirmDelete('tugas', ${r.id}, '${r.nama.replace(/'/g, "\\'")}')">🗑</button>
+      </td>
+    </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-dim);font-family:\'Share Tech Mono\',monospace;font-size:0.8rem;">NO RECORDS FOUND</td></tr>';
 }
 
 function filterTugas(f) {
@@ -376,7 +338,7 @@ async function toggleTugasStatus(id, currentStatus) {
   const newStatus = currentStatus === 'done' ? 'pending' : 'done';
   const result = await apiPatch(`/tugas/${id}`, { status: newStatus });
   if (result.success) {
-    loadTugas(); // Refresh
+    loadTugas(); loadDashboardStats();
   } else {
     alert('Gagal update status: ' + (result.error || 'Unknown error'));
   }
@@ -397,15 +359,12 @@ async function tambahMahasiswa() {
   }
 
   const jadwal = jadwalRaw ? jadwalRaw.split('\n').map(s => s.trim()).filter(Boolean) : [];
-  const tugas = tugasRaw
-    ? tugasRaw.split(',').map(s => ({ nama: s.trim(), matkul: '—', deadline: '—', status: 'pending' })).filter(t => t.nama)
-    : [];
+  const tugas = tugasRaw ? tugasRaw.split(',').map(s => ({ nama: s.trim(), matkul: '—', deadline: '—', status: 'pending' })).filter(t => t.nama) : [];
 
   const result = await apiPost('/mahasiswa', { nama, nim, jurusan, aktif, jadwal, tugas });
-
   if (result.success) {
     showMsg('✓ DATA MAHASISWA BERHASIL DITAMBAHKAN', '#00ff88');
-    resetForm();
+    resetForm(); loadDashboardStats();
     setTimeout(() => switchTab('mahasiswa'), 1200);
   } else {
     showMsg('✕ ' + (result.error || 'Gagal menambahkan'), '#ff1744');
@@ -413,198 +372,139 @@ async function tambahMahasiswa() {
 }
 
 function resetForm() {
-  ['f-nama', 'f-nim', 'f-jadwal', 'f-tugas'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('f-jurusan').value = '';
-  document.getElementById('f-status').value = 'true';
+  ['f-nama', 'f-nim', 'f-jadwal', 'f-tugas'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const jurusanEl = document.getElementById('f-jurusan');
+  const statusEl = document.getElementById('f-status');
+  if (jurusanEl) jurusanEl.value = '';
+  if (statusEl) statusEl.value = 'true';
 }
 
 function showMsg(text, color) {
   const el = document.getElementById('formMsg');
-  el.textContent = text;
-  el.style.display = 'block';
-  el.style.borderColor = color;
-  el.style.color = color;
+  if (!el) return;
+  el.textContent = text; el.style.display = 'block';
+  el.style.borderColor = color; el.style.color = color;
   setTimeout(() => el.style.display = 'none', 3000);
 }
 
-/* ===== MODAL ===== */
-function openModal(idx) {
-  const m = mahasiswaData[idx];
+/* ===== EDIT FUNCTIONS ===== */
+function openEditMhs(id) {
+  const m = mahasiswaData.find(x => x.id === id);
   if (!m) return;
-
-  document.getElementById('modalBody').innerHTML = `
-    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
-      <div style="width:56px;height:56px;background:var(--red-dim);border:1px solid var(--red);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:1rem;font-weight:700;color:var(--red-bright);clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);">${getInitial(m.nama)}</div>
-      <div>
-        <div style="font-family:'Orbitron',monospace;font-size:1rem;font-weight:700;color:#fff;">${m.nama}</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--red-bright);">NIM: ${m.nim}</div>
-        <div style="font-size:0.8rem;color:var(--text-dim);">${m.jurusan}</div>
-    </div>
-    <div style="margin-bottom:1.2rem;">
-      <div style="font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--red-bright);letter-spacing:2px;margin-bottom:0.6rem;">// JADWAL KULIAH</div>
-      ${m.jadwal.length
-        ? m.jadwal.map(j => `<div style="font-size:0.85rem;color:var(--text);padding:7px 0;border-bottom:1px solid #1a1a1a;">📅 ${j}</div>`).join('')
-        : '<div style="color:var(--text-dim);font-size:0.8rem;padding:8px 0;">Belum ada jadwal.</div>'
-      }
-    </div>
-    <div>
-      <div style="font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--red-bright);letter-spacing:2px;margin-bottom:0.8rem;">// STATUS TUGAS</div>
-      ${m.tugas.length
-        ? m.tugas.map(t => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #1a1a1a;">
-            <span style="font-size:0.85rem;color:var(--text);">${t.nama}</span>
-            <span class="badge badge-${t.status === 'done' ? 'done' : 'pending'}">${t.status === 'done' ? 'SELESAI' : 'PENDING'}</span>
-          </div>`).join('')
-        : '<div style="color:var(--text-dim);font-size:0.8rem;padding:8px 0;">Belum ada tugas.</div>'
-      }
-    </div>
-  `;
-  document.getElementById('modalOverlay').classList.add('active');
+  const body = document.getElementById('editModalBody');
+  if (!body) return;
+  body.innerHTML = `
+    <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--red-bright);letter-spacing:2px;margin-bottom:20px;">$ UPDATE mahasiswa SET ... WHERE id = ${id}</div>
+    <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Nama Lengkap *</label><input class="form-input" id="edit-mhs-nama" type="text" value="${m.nama.replace(/"/g, '"')}"></div>
+    <div class="form-group" style="margin-bottom:12px;"><label class="form-label">NIM *</label><input class="form-input" id="edit-mhs-nim" type="text" value="${m.nim}"></div>
+    <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Jurusan *</label><input class="form-input" id="edit-mhs-jurusan" type="text" value="${m.jurusan.replace(/"/g, '"')}"></div>
+    <div class="form-group" style="margin-bottom:20px;"><label class="form-label">Status</label><select class="form-select" id="edit-mhs-aktif"><option value="true" ${m.aktif ? 'selected' : ''}>Aktif</option><option value="false" ${!m.aktif ? 'selected' : ''}>Tidak Aktif</option></select></div>
+    <button class="add-btn" style="width:100%;" onclick="saveEditMhs(${id})">💾 SIMPAN PERUBAHAN</button>
+    <div id="editMsg" style="margin-top:12px;font-family:'Share Tech Mono',monospace;font-size:0.78rem;display:none;padding:10px 14px;border:1px solid;letter-spacing:1px;"></div>`;
+  document.getElementById('editModalOverlay').classList.add('active');
 }
 
-function closeModal(e) {
-  if (e.target === document.getElementById('modalOverlay')) closeModalDirect();
-}
-
-function closeModalDirect() {
-  document.getElementById('modalOverlay').classList.remove('active');
-}
-
-/* ===== STAT COUNTER ===== */
-function initStatCounter() {
-  const statObs = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        const target = parseInt(e.target.dataset.target);
-        const suffix = e.target.closest('.stat-card').querySelector('.stat-label').textContent.includes('%') ? '%' : '+';
-        const duration = 1800;
-        const start = performance.now();
-        const update = now => {
-          const p = Math.min((now - start) / duration, 1);
-          const eased = 1 - Math.pow(1 - p, 3);
-          e.target.textContent = Math.floor(eased * target).toLocaleString() + (p === 1 ? suffix : '');
-          if (p < 1) requestAnimationFrame(update);
-        };
-        requestAnimationFrame(update);
-        statObs.unobserve(e.target);
-      }
-    });
-  }, { threshold: 0.5 });
-  document.querySelectorAll('[data-target]').forEach(el => statObs.observe(el));
-}
-
-/* ===== SCROLL REVEAL ===== */
-function initScrollReveal() {
-  const revObs = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.classList.add('visible');
-        revObs.unobserve(e.target);
-      }
-    });
-  }, { threshold: 0.1 });
-  document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale').forEach(el => revObs.observe(el));
-}
-
-/* ===== CUSTOM CURSOR ===== */
-function initCursor() {
-  const cur = document.getElementById('cursor');
-  const ring = document.getElementById('cursor-ring');
-  let mx = 0, my = 0, rx = 0, ry = 0;
-
-  document.addEventListener('mousemove', e => {
-    mx = e.clientX; my = e.clientY;
-    cur.style.left = mx + 'px'; cur.style.top = my + 'px';
-    spawnTrail(mx, my);
-  });
-
-  function lerpRing() {
-    rx += (mx - rx) * 0.14; ry += (my - ry) * 0.14;
-    ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
-    requestAnimationFrame(lerpRing);
+async function saveEditMhs(id) {
+  const nama = document.getElementById('edit-mhs-nama').value.trim();
+  const nim = document.getElementById('edit-mhs-nim').value.trim();
+  const jurusan = document.getElementById('edit-mhs-jurusan').value.trim();
+  const aktif = document.getElementById('edit-mhs-aktif').value === 'true';
+  const msgEl = document.getElementById('editMsg');
+  if (!nama || !nim || !jurusan) {
+    showAuthMsg(msgEl, '⚠ Semua field wajib diisi!', '#ffbb00');
+    return;
   }
-  lerpRing();
-
-  document.querySelectorAll('a, button, .mhs-card, .feature-card, .stat-card, .tab-btn').forEach(el => {
-    el.addEventListener('mouseenter', () => { cur.classList.add('hover'); ring.classList.add('hover'); });
-    el.addEventListener('mouseleave', () => { cur.classList.remove('hover'); ring.classList.remove('hover'); });
-  });
-}
-
-/* ===== CURSOR TRAIL ===== */
-function spawnTrail(x, y) {
-  const d = document.createElement('div');
-  d.className = 'cursor-trail';
-  d.style.left = x + 'px'; d.style.top = y + 'px';
-  d.style.transform = 'translate(-50%, -50%)';
-  document.body.appendChild(d);
-  setTimeout(() => d.remove(), 600);
-}
-
-/* ===== RIPPLE ON CLICK ===== */
-function initRipple() {
-  document.querySelectorAll('.btn-primary, .btn-outline, .add-btn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      const r = document.createElement('span');
-      r.className = 'ripple-effect';
-      r.style.left = e.offsetX + 'px'; r.style.top = e.offsetY + 'px';
-      btn.appendChild(r);
-      setTimeout(() => r.remove(), 600);
-    });
-  });
-}
-
-/* ===== BOOT SEQUENCE OVERLAY ===== */
-function initBootSequence() {
-  const overlay = document.getElementById('bootOverlay');
-  if (!overlay) return;
-
-  const lines = [
-    '> INITIALIZING ZIEEBOT v2.0...',
-    '> LOADING DISCORD.JS MODULES...',
-    '> CONNECTING TO GATEWAY...',
-    '> SYNCING SLASH COMMANDS...',
-    '> AKADEMIK DASHBOARD READY...',
-    '> ALL SYSTEMS OPERATIONAL ✓'
-  ];
-  const logEl = document.getElementById('bootLog');
-  let i = 0;
-
-  function addLine() {
-    if (i < lines.length) {
-      const div = document.createElement('div');
-      div.textContent = lines[i];
-      div.style.opacity = '0';
-      div.style.transition = 'opacity 0.3s';
-      logEl.appendChild(div);
-      setTimeout(() => div.style.opacity = '1', 50);
-      i++;
-      setTimeout(addLine, 320);
-    } else {
-      setTimeout(() => {
-        overlay.style.transition = 'opacity 0.8s ease';
-        overlay.style.opacity = '0';
-        setTimeout(() => overlay.remove(), 900);
-      }, 400);
-    }
+  const result = await apiPut(`/mahasiswa/${id}`, { nama, nim, jurusan, aktif });
+  if (result.success) {
+    showAuthMsg(msgEl, '✓ Mahasiswa berhasil diperbarui!', '#00ff88');
+    loadMahasiswa(); loadDashboardStats();
+    setTimeout(() => closeEditModalDirect(), 1000);
+  } else {
+    showAuthMsg(msgEl, '✕ ' + (result.error || 'Gagal memperbarui'), '#ff1744');
   }
-  addLine();
 }
 
-/* ===== INIT ALL ===== */
-document.addEventListener('DOMContentLoaded', () => {
-  initBootSequence();
-  initMatrixRain();
-  initParticles();
-  initTypewriter();
-  initHeroEntrance();
-  initAvatarAnimation();
-  initCursor();
-  initRipple();
-  initStatCounter();
-  initScrollReveal();
+function openEditJadwal(id, hari, matkul, jam) {
+  const body = document.getElementById('editModalBody');
+  if (!body) return;
+  body.innerHTML = `
+    <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--red-bright);letter-spacing:2px;margin-bottom:20px;">$ UPDATE jadwal SET ... WHERE id = ${id}</div>
+    <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Hari *</label><input class="form-input" id="edit-jadwal-hari" type="text" value="${hari.replace(/"/g, '"')}"></div>
+    <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Mata Kuliah *</label><input class="form-input" id="edit-jadwal-matkul" type="text" value="${matkul.replace(/"/g, '"')}"></div>
+    <div class="form-group" style="margin-bottom:20px;"><label class="form-label">Jam *</label><input class="form-input" id="edit-jadwal-jam" type="text" value="${jam.replace(/"/g, '"')}"></div>
+    <button class="add-btn" style="width:100%;" onclick="saveEditJadwal(${id})">💾 SIMPAN PERUBAHAN</button>
+    <div id="editMsg" style="margin-top:12px;font-family:'Share Tech Mono',monospace;font-size:0.78rem;display:none;padding:10px 14px;border:1px solid;letter-spacing:1px;"></div>`;
+  document.getElementById('editModalOverlay').classList.add('active');
+}
 
-  // Load data dari API
-  loadMahasiswa();
-  loadStats();
-});
+async function saveEditJadwal(id) {
+  const hari = document.getElementById('edit-jadwal-hari').value.trim();
+  const matkul = document.getElementById('edit-jadwal-matkul').value.trim();
+  const jam = document.getElementById('edit-jadwal-jam').value.trim();
+  const msgEl = document.getElementById('editMsg');
+  if (!hari || !matkul || !jam) {
+    showAuthMsg(msgEl, '⚠ Semua field wajib diisi!', '#ffbb00');
+    return;
+  }
+  const result = await apiPut(`/jadwal/${id}`, { hari, matkul, jam });
+  if (result.success) {
+    showAuthMsg(msgEl, '✓ Jadwal berhasil diperbarui!', '#00ff88');
+    loadJadwal(); loadDashboardStats();
+    setTimeout(() => closeEditModalDirect(), 1000);
+  } else {
+    showAuthMsg(msgEl, '✕ ' + (result.error || 'Gagal memperbarui'), '#ff1744');
+  }
+}
+
+function openEditTugas(id, nama, matkul, deadline, status) {
+  const body = document.getElementById('editModalBody');
+  if (!body) return;
+  body.innerHTML = `
+    <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--red-bright);letter-spacing:2px;margin-bottom:20px;">$ UPDATE tugas SET ... WHERE id = ${id}</div>
+    <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Nama Tugas *</label><input class="form-input" id="edit-tugas-nama" type="text" value="${nama.replace(/"/g, '"')}"></div>
+    <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Mata Kuliah</label><input class="form-input" id="edit-tugas-matkul" type="text" value="${matkul.replace(/"/g, '"')}"></div>
+    <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Deadline</label><input class="form-input" id="edit-tugas-deadline" type="text" value="${deadline.replace(/"/g, '"')}"></div>
+    <div class="form-group" style="margin-bottom:20px;"><label class="form-label">Status</label><select class="form-select" id="edit-tugas-status"><option value="pending" ${status === 'pending' ? 'selected' : ''}>PENDING</option><option value="done" ${status === 'done' ? 'selected' : ''}>SELESAI</option></select></div>
+    <button class="add-btn" style="width:100%;" onclick="saveEditTugas(${id})">💾 SIMPAN PERUBAHAN</button>
+    <div id="editMsg" style="margin-top:12px;font-family:'Share Tech Mono',monospace;font-size:0.78rem;display:none;padding:10px 14px;border:1px solid;letter-spacing:1px;"></div>`;
+  document.getElementById('editModalOverlay').classList.add('active');
+}
+
+async function saveEditTugas(id) {
+  const nama = document.getElementById('edit-tugas-nama').value.trim();
+  const matkul = document.getElementById('edit-tugas-matkul').value.trim();
+  const deadline = document.getElementById('edit-tugas-deadline').value.trim();
+  const status = document.getElementById('edit-tugas-status').value;
+  const msgEl = document.getElementById('editMsg');
+  if (!nama) {
+    showAuthMsg(msgEl, '⚠ Nama tugas wajib diisi!', '#ffbb00');
+    return;
+  }
+  const result = await apiPut(`/tugas/${id}`, { nama, matkul, deadline, status });
+  if (result.success) {
+    showAuthMsg(msgEl, '✓ Tugas berhasil diperbarui!', '#00ff88');
+    loadTugas(); loadDashboardStats();
+    setTimeout(() => closeEditModalDirect(), 1000);
+  } else {
+    showAuthMsg(msgEl, '✕ ' + (result.error || 'Gagal memperbarui'), '#ff1744');
+  }
+}
+
+/* ===== DELETE CONFIRM ===== */
+function confirmDelete(type, id, name) {
+  deleteTarget = { type, id };
+  const textEl = document.getElementById('confirmText');
+  if (textEl) textEl.textContent = `Yakin ingin menghapus ${type} "${name}"? Tindakan ini tidak bisa dibatalkan.`;
+  document.getElementById('confirmModalOverlay').classList.add('active');
+}
+
+function closeConfirmModal(e) {
+  if (e.target === document.getElementById('confirmModalOverlay')) closeConfirmModalDirect();
+}
+function closeConfirmModalDirect() {
+  document.getElementById('confirmModalOverlay').classList.remove('active');
+  deleteTarget = null;
+}
+
+async function executeDelete() {
+  if (!deleteTarget) return;

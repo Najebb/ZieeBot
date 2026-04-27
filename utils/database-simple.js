@@ -9,7 +9,7 @@ function loadData() {
   try {
     if (fs.existsSync(DATA_FILE)) return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
   } catch (e) { console.warn('⚠️ Gagal load JSON, buat baru'); }
-  return { user_xp: {}, guild_settings: {}, mahasiswa: [], jadwal: [], tugas: [] };
+  return { user_xp: {}, guild_settings: {}, mahasiswa: [], jadwal: [], tugas: [], users: [] };
 }
 
 function saveData(data) {

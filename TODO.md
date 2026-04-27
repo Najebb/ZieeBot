@@ -1,34 +1,33 @@
-# TODO.md - Progress Bot Discord Jebb Bot
+# TODO.md — Progress Update v1.4 Jebb Bot
 
-## Status: ✅ Web Dashboard Integrated
+## Status: 🚧 IN PROGRESS
 
-### Step 1: Setup Project ✅ **DONE**
-- npm init -y, install discord.js, dotenv, express, cors
+### Step 1: Database & API Foundation ✅ DONE
+- [x] Update `utils/database.js` — tambah tabel `users` untuk login/register
+- [x] Update `utils/database-simple.js` — tambah users di JSON fallback
+- [x] Update `routes/api.js` — tambah endpoint: auth (login/register), CRUD mahasiswa/jadwal/tugas, dashboard stats
 
-### Step 2: Files Konfigurasi ✅ **DONE**
-- package.json, .env, .gitignore
+### Step 2: Discord Events & History ✅ DONE
+- [x] Update `events/messageCreate.js` — tambah v1.4 ke updateHistory[]
+- [x] Buat `events/guildMemberAdd.js` — welcome message otomatis
+- [x] Update `events/ready.js` — integrasi banner profile
 
-### Step 3: Commands & Events ✅ **DONE**
-- moderation: ban, kick, clear
-- fun: 8ball, avatar, quiz, tebakangka
-- utility: ping, serverinfo, userinfo, botinfo, rank, leaderboard, help, schedule, afk, feedback, tiktok, instagram
-- events: ready, interactionCreate, messageCreate
+### Step 3: Dashboard Frontend (Login + CRUD)
+- [ ] Update `index.html` — login modal/register, tombol edit/delete, dashboard overview card
+- [ ] Update `script.js` — auth flow (JWT), handler edit/delete/tambah, dashboard stats
+- [ ] Update `style.css` — style login modal, form edit, action buttons
 
-### Step 4: Main Files ✅ **DONE**
-- index.js (Express + Discord Bot)
-- deploy-commands.js
+### Step 4: Commands & Help
+- [ ] Update `commands/utility/help.js` — tambah info fitur baru (dashboard, login, banner)
 
-### Step 5: Web Dashboard Integration ✅ **DONE**
-- `utils/database.js` — tabel akademik (mahasiswa, jadwal, tugas)
-- `routes/api.js` — REST API endpoints
-- `script.js` — fetch data dari API (ganti hardcoded)
-- `index.js` — Express serve static + API
+### Step 5: Banner Integration
+- [ ] Integrasi `zieebot-banner-animated.html` ke dashboard (iframe atau embed)
+- [ ] Serve banner via Express static atau endpoint khusus
 
-### Step 6: Test & Deploy ⏳ **READY**
-- Jalankan `npm start`
-- Buka `http://localhost:8080`
-
----
-
-**Next: Test local dan deploy ke Vercel/Railway.**
+### Step 6: Testing & Finalisasi
+- [ ] Test login/register flow
+- [ ] Test CRUD dashboard
+- [ ] Test welcome message
+- [ ] Test update history v1.4
+- [ ] Jalankan `npm start` dan cek semua fitur
 

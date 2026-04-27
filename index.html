@@ -51,9 +51,14 @@
     <li><a href="#stats">Stats</a></li>
     <li><a href="#features">Features</a></li>
     <li><a href="#kelas">Dashboard</a></li>
+    <li><a href="#banner">Banner</a></li>
     <li><a href="#invite">Support</a></li>
   </ul>
-  <a href="#invite" class="nav-invite">INVITE BOT</a>
+  <div style="display:flex;gap:1rem;align-items:center;">
+    <span id="navUser" style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--text-dim);display:none;"></span>
+    <button id="navLoginBtn" class="nav-invite" onclick="openLoginModal()">LOGIN</button>
+    <button id="navLogoutBtn" class="nav-invite" style="display:none;border-color:#555;color:#888;" onclick="doLogout()">LOGOUT</button>
+  </div>
 </nav>
 
 <!-- ===== HERO ===== -->
@@ -82,14 +87,12 @@
       <!-- AVATAR SIDE -->
       <div class="hero-avatar-col hero-enter">
         <div class="bot-avatar-wrap">
-          <!-- Orbit ring + dots -->
           <div class="bot-orbit-ring">
             <div class="orbit-dot"></div>
             <div class="orbit-dot"></div>
             <div class="orbit-dot"></div>
           </div>
 
-          <!-- BOT AVATAR SVG -->
           <svg class="bot-avatar-svg" width="160" height="180" viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <radialGradient id="bodyGrad" cx="50%" cy="40%" r="60%">
@@ -113,8 +116,6 @@
                 <stop offset="100%" stop-color="rgba(255,23,68,0)" />
               </linearGradient>
             </defs>
-
-            <!-- ANTENNA -->
             <line x1="80" y1="30" x2="80" y2="10" stroke="#FF1744" stroke-width="2" opacity="0.8"/>
             <circle cx="80" cy="8" r="4" fill="#FF1744" filter="url(#glow)">
               <animate attributeName="r" values="3;5;3" dur="1.2s" repeatCount="indefinite"/>
@@ -122,37 +123,19 @@
             </circle>
             <line x1="80" y1="18" x2="68" y2="10" stroke="#FF1744" stroke-width="1.2" opacity="0.4"/>
             <line x1="80" y1="18" x2="92" y2="10" stroke="#FF1744" stroke-width="1.2" opacity="0.4"/>
-
-            <!-- HEAD -->
-            <rect x="20" y="30" width="120" height="100" rx="12"
-              fill="url(#bodyGrad)" stroke="#FF1744" stroke-width="1.5" opacity="0.9"/>
-
-            <!-- INNER PANEL LINES -->
-            <rect x="30" y="40" width="100" height="80" rx="6"
-              fill="none" stroke="#3E0000" stroke-width="1"/>
+            <rect x="20" y="30" width="120" height="100" rx="12" fill="url(#bodyGrad)" stroke="#FF1744" stroke-width="1.5" opacity="0.9"/>
+            <rect x="30" y="40" width="100" height="80" rx="6" fill="none" stroke="#3E0000" stroke-width="1"/>
             <line x1="30" y1="80" x2="130" y2="80" stroke="#3E0000" stroke-width="0.8" opacity="0.7"/>
-
-            <!-- SCAN LINE (animated via JS) -->
-            <rect id="avatarScanLine" x="20" y="0%" width="120" height="18"
-              fill="url(#scanGrad)" clip-path="url(#avatarClip)" opacity="0.6"/>
-
-            <!-- EYES -->
+            <rect id="avatarScanLine" x="20" y="0%" width="120" height="18" fill="url(#scanGrad)" clip-path="url(#avatarClip)" opacity="0.6"/>
             <g filter="url(#glow)">
-              <!-- Left Eye -->
-              <rect class="bot-eye" x="40" y="52" width="28" height="18" rx="4"
-                fill="#FF1744" opacity="0.9"
-                style="transform-origin:54px 61px;transition:transform 0.12s;">
+              <rect class="bot-eye" x="40" y="52" width="28" height="18" rx="4" fill="#FF1744" opacity="0.9" style="transform-origin:54px 61px;transition:transform 0.12s;">
                 <animate attributeName="opacity" values="0.9;1;0.9" dur="2s" repeatCount="indefinite"/>
               </rect>
               <rect x="44" y="56" width="8" height="10" rx="2" fill="#000" opacity="0.7"/>
               <circle cx="59" cy="61" r="2.5" fill="#FF6B6B" opacity="0.8">
                 <animate attributeName="r" values="2;3;2" dur="1.5s" repeatCount="indefinite"/>
               </circle>
-
-              <!-- Right Eye -->
-              <rect class="bot-eye" x="92" y="52" width="28" height="18" rx="4"
-                fill="#FF1744" opacity="0.9"
-                style="transform-origin:106px 61px;transition:transform 0.12s;">
+              <rect class="bot-eye" x="92" y="52" width="28" height="18" rx="4" fill="#FF1744" opacity="0.9" style="transform-origin:106px 61px;transition:transform 0.12s;">
                 <animate attributeName="opacity" values="0.9;1;0.9" dur="2s" begin="0.3s" repeatCount="indefinite"/>
               </rect>
               <rect x="96" y="56" width="8" height="10" rx="2" fill="#000" opacity="0.7"/>
@@ -160,18 +143,12 @@
                 <animate attributeName="r" values="2;3;2" dur="1.5s" begin="0.2s" repeatCount="indefinite"/>
               </circle>
             </g>
-
-            <!-- MOUTH / STATUS BAR -->
             <rect x="50" y="85" width="60" height="8" rx="4" fill="#1a0000" stroke="#3E0000" stroke-width="1"/>
             <rect x="52" y="87" width="42" height="4" rx="2" fill="#FF1744" opacity="0.8">
               <animate attributeName="width" values="10;42;28;42" dur="3s" repeatCount="indefinite"/>
             </rect>
-
-            <!-- CHEEK ACCENTS -->
             <circle cx="30" cy="70" r="6" fill="#FF1744" opacity="0.12"/>
             <circle cx="130" cy="70" r="6" fill="#FF1744" opacity="0.12"/>
-
-            <!-- DETAIL DOTS -->
             <circle cx="36" cy="108" r="2" fill="#FF1744" opacity="0.5">
               <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.8s" repeatCount="indefinite"/>
             </circle>
@@ -181,22 +158,13 @@
             <circle cx="52" cy="108" r="2" fill="#FF1744" opacity="0.5">
               <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.8s" begin="0.6s" repeatCount="indefinite"/>
             </circle>
-
-            <!-- NECK -->
-            <rect x="68" y="130" width="24" height="14" rx="3"
-              fill="#0f0f0f" stroke="#3E0000" stroke-width="1"/>
-
-            <!-- BODY -->
-            <rect x="25" y="144" width="110" height="28" rx="8"
-              fill="url(#bodyGrad)" stroke="#FF1744" stroke-width="1.2" opacity="0.85"/>
-
-            <!-- BODY DETAIL -->
+            <rect x="68" y="130" width="24" height="14" rx="3" fill="#0f0f0f" stroke="#3E0000" stroke-width="1"/>
+            <rect x="25" y="144" width="110" height="28" rx="8" fill="url(#bodyGrad)" stroke="#FF1744" stroke-width="1.2" opacity="0.85"/>
             <rect x="38" y="151" width="30" height="5" rx="2" fill="#3E0000"/>
             <rect x="38" y="151" width="20" height="5" rx="2" fill="#FF1744" opacity="0.6">
               <animate attributeName="width" values="5;20;12;20" dur="2.5s" repeatCount="indefinite"/>
             </rect>
-            <circle cx="100" cy="156" r="5" fill="#1a0000" stroke="#FF1744" stroke-width="1">
-            </circle>
+            <circle cx="100" cy="156" r="5" fill="#1a0000" stroke="#FF1744" stroke-width="1"></circle>
             <circle cx="100" cy="156" r="2.5" fill="#FF1744" opacity="0.8">
               <animate attributeName="opacity" values="0.4;1;0.4" dur="1s" repeatCount="indefinite"/>
             </circle>
@@ -204,7 +172,6 @@
             <circle cx="114" cy="156" r="1.5" fill="#555"/>
           </svg>
 
-          <!-- STATUS BADGE BELOW AVATAR -->
           <div style="
             position:absolute;bottom:-28px;left:50%;transform:translateX(-50%);
             font-family:'Share Tech Mono',monospace;font-size:0.65rem;
@@ -297,6 +264,23 @@
   </div>
 </section>
 
+<!-- BANNER SECTION -->
+<section id="banner">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag reveal">// BANNER //</span>
+      <h2 class="section-title glitch-text reveal stagger-1" data-text="BOT BANNER">BOT BANNER</h2>
+      <div class="red-line reveal stagger-2"></div>
+      <p style="margin-top:1.5rem;color:var(--text-dim);font-size:0.95rem;" class="reveal stagger-3">
+        Banner animasi resmi ZieeBot — tersedia untuk profil dan promosi.
+      </p>
+    </div>
+    <div class="banner-wrap reveal">
+      <iframe src="zieebot-banner-animated.html" class="banner-iframe" title="ZieeBot Banner"></iframe>
+    </div>
+  </div>
+</section>
+
 <!-- DASHBOARD KELAS -->
 <section id="kelas">
   <div class="container">
@@ -307,6 +291,35 @@
       <p style="margin-top:1.5rem;color:var(--text-dim);font-size:0.95rem;" class="reveal stagger-3">
         Portal informasi akademik — Data Mahasiswa, Jadwal, Tugas, dalam satu dashboard.
       </p>
+    </div>
+
+    <!-- DASHBOARD OVERVIEW -->
+    <div class="dash-overview reveal">
+      <div class="dash-stat-card">
+        <div class="dash-stat-icon">👥</div>
+        <div class="dash-stat-val" id="dashTotalMhs">0</div>
+        <div class="dash-stat-label">Total Mahasiswa</div>
+      </div>
+      <div class="dash-stat-card">
+        <div class="dash-stat-icon" style="color:#00ff88;">●</div>
+        <div class="dash-stat-val" id="dashAktifMhs" style="color:#00ff88;">0</div>
+        <div class="dash-stat-label">Mahasiswa Aktif</div>
+      </div>
+      <div class="dash-stat-card">
+        <div class="dash-stat-icon">📅</div>
+        <div class="dash-stat-val" id="dashTotalJadwal">0</div>
+        <div class="dash-stat-label">Total Jadwal</div>
+      </div>
+      <div class="dash-stat-card">
+        <div class="dash-stat-icon" style="color:var(--red-bright);">📋</div>
+        <div class="dash-stat-val" id="dashPendingTugas" style="color:var(--red-bright);">0</div>
+        <div class="dash-stat-label">Tugas Pending</div>
+      </div>
+      <div class="dash-stat-card">
+        <div class="dash-stat-icon" style="color:#00ff88;">✓</div>
+        <div class="dash-stat-val" id="dashDoneTugas" style="color:#00ff88;">0</div>
+        <div class="dash-stat-label">Tugas Selesai</div>
+      </div>
     </div>
 
     <div class="dashboard-wrap reveal">
@@ -366,7 +379,7 @@
           <table class="tugas-table" id="tugasTable">
             <thead>
               <tr>
-                <th>NAMA TUGAS</th><th>MAHASISWA</th><th>MATA KULIAH</th><th>DEADLINE</th><th>STATUS</th>
+                <th>NAMA TUGAS</th><th>MAHASISWA</th><th>MATA KULIAH</th><th>DEADLINE</th><th>STATUS</th><th>AKSI</th>
               </tr>
             </thead>
             <tbody id="tugasBody"></tbody>
@@ -459,6 +472,81 @@
   </div>
 </div>
 
+<!-- LOGIN / REGISTER MODAL -->
+<div class="modal-overlay" id="authModalOverlay" onclick="closeAuthModal(event)">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="closeAuthModalDirect()">✕</button>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">LOGIN</button>
+      <button class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">REGISTER</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="authLoginForm">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--red-bright);letter-spacing:2px;margin-bottom:20px;">
+        $ AUTH LOGIN //
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label">Username</label>
+        <input class="form-input" id="login-username" type="text" placeholder="Masukkan username">
+      </div>
+      <div class="form-group" style="margin-bottom:20px;">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="login-password" type="password" placeholder="Masukkan password">
+      </div>
+      <button class="add-btn" style="width:100%;" onclick="doLogin()">🔐 LOGIN</button>
+      <div id="loginMsg" style="margin-top:16px;font-family:'Share Tech Mono',monospace;font-size:0.78rem;display:none;padding:10px 14px;border:1px solid;letter-spacing:1px;"></div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="authRegisterForm" style="display:none;">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--red-bright);letter-spacing:2px;margin-bottom:20px;">
+        $ AUTH REGISTER //
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label class="form-label">Username *</label>
+        <input class="form-input" id="reg-username" type="text" placeholder="Buat username">
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label class="form-label">Email (opsional)</label>
+        <input class="form-input" id="reg-email" type="email" placeholder="email@example.com">
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label class="form-label">Display Name</label>
+        <input class="form-input" id="reg-display" type="text" placeholder="Nama tampilan">
+      </div>
+      <div class="form-group" style="margin-bottom:20px;">
+        <label class="form-label">Password * (min 6 karakter)</label>
+        <input class="form-input" id="reg-password" type="password" placeholder="Buat password">
+      </div>
+      <button class="add-btn" style="width:100%;" onclick="doRegister()">📝 BUAT AKUN</button>
+      <div id="regMsg" style="margin-top:16px;font-family:'Share Tech Mono',monospace;font-size:0.78rem;display:none;padding:10px 14px;border:1px solid;letter-spacing:1px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModalOverlay" onclick="closeEditModal(event)">
+  <div class="modal" style="max-width:520px;">
+    <button class="modal-close" onclick="closeEditModalDirect()">✕</button>
+    <div id="editModalBody"></div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-overlay" id="confirmModalOverlay" onclick="closeConfirmModal(event)">
+  <div class="modal" style="max-width:400px;text-align:center;">
+    <div style="font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:700;color:var(--red-bright);margin-bottom:1rem;">⚠️ KONFIRMASI HAPUS</div>
+    <p id="confirmText" style="color:var(--text-dim);margin-bottom:1.5rem;font-size:0.95rem;"></p>
+    <div style="display:flex;gap:1rem;justify-content:center;">
+      <button class="btn-outline" style="padding:10px 24px;font-size:0.7rem;" onclick="closeConfirmModalDirect()">BATAL</button>
+      <button class="add-btn" style="background:#8B0000;" id="confirmBtn" onclick="executeDelete()">HAPUS</button>
+    </div>
+  </div>
+</div>
+
 <script src="script.js"></script>
 </body>
 </html>
+

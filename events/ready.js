@@ -42,6 +42,13 @@ module.exports = {
     }, 10000); // Rotate 10 detik
 
     // ========================
+    // BANNER PROFILE - Info & Log
+    // ========================
+    const bannerUrl = process.env.BANNER_URL || `http://localhost:${process.env.PORT || 8080}/zieebot-banner-animated.html`;
+    console.log(`🖼️  Banner Profile: ${bannerUrl}`);
+    console.log(`   → Banner tersedia di dashboard dan bisa diakses publik.`);
+
+    // ========================
     // HEARTBEAT - Ping setiap 1 jam ke Owner
     // ========================
     // Bot akan kirim pesan ke owner setiap 1 jam untuk konfirmasi bot masih hidup

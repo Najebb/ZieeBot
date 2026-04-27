@@ -77,6 +77,20 @@ try {
     )
   `);
 
+  // ===== TABEL USERS (Dashboard Login) =====
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      email TEXT UNIQUE,
+      password_hash TEXT NOT NULL,
+      display_name TEXT,
+      role TEXT DEFAULT 'user',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      last_login DATETIME
+    )
+  `);
+
   dbEnabled = true;
   dbType = 'sqlite';
   console.log('✅ Database SQLite siap! (Native mode)');
