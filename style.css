@@ -422,7 +422,10 @@ section { padding: 100px 2rem; position: relative; }
 }
 #dashboards .container { position: relative; z-index: 1; }
 
-#kelas { background: var(--black); border-top: 2px solid var(--red); }
+#kelas {
+  background: radial-gradient(ellipse at center, rgba(139,0,0,0.13) 0%, transparent 60%), var(--black);
+  border-top: 2px solid var(--red);
+}
 .dashboard-wrap { background: var(--dark2); border: 1px solid var(--red-dim); }
 .tab-bar { display: flex; border-bottom: 1px solid var(--red-dim); overflow-x: auto; }
 .tab-btn {

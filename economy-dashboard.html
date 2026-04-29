@@ -26,7 +26,10 @@
     --font-body: 'Rajdhani', sans-serif;
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; overflow-x: hidden; }
+  body {
+    background: radial-gradient(ellipse at center, rgba(139,0,0,.13) 0%, transparent 60%), var(--bg);
+    color: var(--text); font-family: var(--font-body); min-height: 100vh; overflow-x: hidden;
+  }
   body::before {
     content: ''; position: fixed; inset: 0;
     background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(139,0,0,.018) 2px, rgba(139,0,0,.018) 4px);
@@ -118,6 +121,13 @@
   .btn-green { color: var(--green); border-color: var(--green); }
   .btn-green:hover { background: var(--green); color: var(--bg); }
   .btn-sm { padding: .35rem .9rem; font-size: .65rem; width: auto; }
+  .inline-actions { display: flex; gap: .45rem; flex-wrap: wrap; align-items: center; }
+  .account-user { font-weight: 700; letter-spacing: .4px; }
+  .account-email { color: var(--text-dim); font-size: .75rem; }
+  .role-owner { color: #ff7bff; border-color: #ff7bff; background: rgba(255,123,255,.08); }
+  .role-admin { color: var(--red); border-color: var(--red); background: rgba(255,23,68,.08); }
+  .role-editor { color: var(--gold); border-color: var(--gold); background: rgba(241,196,15,.08); }
+  .role-viewer { color: var(--green); border-color: var(--green); background: rgba(0,255,136,.08); }
 
   /* ── Leaderboard ── */
   .lb-item { display: flex; align-items: center; gap: 1rem; padding: .9rem 1.25rem; border-bottom: 1px solid var(--border); transition: background .15s; }
@@ -343,6 +353,17 @@
         <button class="btn btn-red" onclick="adminRemoveCoins()">🔻 KURANGI ZENNY</button>
       </div>
     </div>
+    <p class="section-label">SELECT * FROM auth_users — ACCOUNT MANAGEMENT</p>
+    <div class="table-wrap">
+      <div class="table-head">
+        <span class="table-title">AKUN DASHBOARD</span>
+        <button class="btn btn-red btn-sm" onclick="loadAccounts()">REFRESH</button>
+      </div>
+      <table>
+        <thead><tr><th>AKUN</th><th>ROLE</th><th>AKSI CEPAT</th></tr></thead>
+        <tbody id="account-table-body"><tr class="empty-row"><td colspan="4">Memuat akun...</td></tr></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- MASCOT Z-NULL (recolored) -->
@@ -519,6 +540,7 @@ async function api(method, ep, body) {
 
 // ── Helpers ──────────────────────────────────────────────────
 let econData = { users: [], transactions: [], shopItems: [], stats: {} };
+let accountData = [];
 const DEMO_ECON = {
   users: [
     { user_id: '123456789012345678', balance: 12500, bank: 34000, last_daily: Date.now() - 86400000 },
@@ -596,6 +618,7 @@ async function loadAll() {
     loadOverview();
     showNotif('Mode contoh data aktif (API kosong/tidak tersedia).');
   }
+  await loadAccounts();
 }
 
 function loadOverview() {
@@ -740,6 +763,71 @@ function quickAdd(uid) {
   document.getElementById('tab-admin').classList.add('active');
   document.getElementById('add-uid').focus();
   showNotif('USER ID telah diisi di Admin Tools');
+}
+
+async function loadAccounts() {
+  const res = await api('GET', '/auth/users');
+  accountData = res && res.success ? (res.data || []) : [];
+  renderAccountTable();
+}
+
+function renderAccountTable() {
+  const tbody = document.getElementById('account-table-body');
+  if (!tbody) return;
+  if (!accountData.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="3">Akun tidak tersedia atau akses ditolak</td></tr>';
+    return;
+  }
+  const roleClass = (role) => {
+    if (role === 'owner') return 'role-owner';
+    if (role === 'admin') return 'role-admin';
+    if (role === 'editor') return 'role-editor';
+    return 'role-viewer';
+  };
+  tbody.innerHTML = accountData.map(a => `
+    <tr>
+      <td>
+        <div class="account-user">${a.username || '-'}</div>
+        <div class="account-email">${a.email || '-'}</div>
+      </td>
+      <td><span class="badge ${roleClass(a.role)}">${(a.role || '-').toUpperCase()}</span></td>
+      <td>
+        <div class="inline-actions">
+          <button class="btn btn-gold btn-sm" onclick="downloadAccount('${a.id}')">DOWNLOAD JSON</button>
+          <button class="btn btn-red btn-sm" onclick="deleteAccount('${a.id}','${(a.username || '').replace(/'/g, "\\'")}')">DELETE AKUN</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function downloadAccount(id) {
+  try {
+    const res = await fetch(`${API_BASE}/auth/users/${id}/export`, { headers: { 'x-auth-token': AUTH_TOKEN } });
+    if (!res.ok) throw new Error('Akses ditolak / akun tidak ditemukan');
+    const blob = await res.blob();
+    const file = res.headers.get('content-disposition')?.match(/filename="(.+)"/)?.[1] || `akun_${id}.json`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file;
+    a.click();
+    URL.revokeObjectURL(url);
+    showNotif('Download akun berhasil.');
+  } catch (e) {
+    showNotif(e.message || 'Gagal download akun.', true);
+  }
+}
+
+async function deleteAccount(id, username) {
+  if (!confirm(`Hapus akun "${username}"?`)) return;
+  const res = await api('DELETE', `/auth/users/${id}`);
+  if (res && res.success) {
+    showNotif('Akun berhasil dihapus.');
+    await loadAccounts();
+  } else {
+    showNotif(res?.error || 'Gagal menghapus akun.', true);
+  }
 }
 
 // ── Z-NULL Tips ──────────────────────────────────────────────

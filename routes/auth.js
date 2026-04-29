@@ -203,5 +203,75 @@ function requireRole(...roles) {
   };
 }
 
+// GET /auth/users - list akun (admin/owner)
+router.get('/users', requireAuth, requireRole('admin'), (req, res) => {
+  try {
+    const safeUsers = users.map(u => ({
+      id: u.id,
+      username: u.username,
+      email: u.email || '',
+      role: u.role,
+      createdAt: u.createdAt || null
+    }));
+    res.json({ success: true, data: safeUsers });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /auth/users/:id/export - download data akun (admin/owner)
+router.get('/users/:id/export', requireAuth, requireRole('admin'), (req, res) => {
+  try {
+    const user = users.find(u => u.id === req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+    }
+
+    const safeUser = {
+      id: user.id,
+      username: user.username,
+      email: user.email || '',
+      role: user.role,
+      createdAt: user.createdAt || null
+    };
+    const safeName = (user.username || 'user').replace(/[^a-zA-Z0-9_-]/g, '_');
+
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="akun_${safeName}.json"`);
+    res.send(JSON.stringify(safeUser, null, 2));
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// DELETE /auth/users/:id - hapus akun (admin/owner)
+router.delete('/users/:id', requireAuth, requireRole('admin'), (req, res) => {
+  try {
+    const targetId = req.params.id;
+    const targetUser = users.find(u => u.id === targetId);
+
+    if (!targetUser) {
+      return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+    }
+    if (targetUser.role === 'owner') {
+      return res.status(403).json({ success: false, error: 'Akun owner tidak bisa dihapus' });
+    }
+    if (req.user.id === targetId) {
+      return res.status(400).json({ success: false, error: 'Tidak bisa menghapus akun sendiri' });
+    }
+
+    users = users.filter(u => u.id !== targetId);
+    saveUsers(users);
+
+    for (const [token, userId] of tokens.entries()) {
+      if (userId === targetId) tokens.delete(token);
+    }
+
+    res.json({ success: true, message: 'Akun berhasil dihapus' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = { router, requireAuth, requireRole };
 

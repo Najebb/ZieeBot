@@ -8,7 +8,10 @@
 <style>
   :root { --bg:#080808; --bg2:#0f0f0f; --bg3:#141414; --line:#1a0000; --red:#8B0000; --red2:#FF1744; --txt:#e0e0e0; --dim:#888; --ok:#00ff88; }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--txt);font-family:'Rajdhani',sans-serif;min-height:100vh}
+  body{
+    background:radial-gradient(ellipse at center, rgba(139,0,0,.13) 0%, transparent 60%), var(--bg);
+    color:var(--txt);font-family:'Rajdhani',sans-serif;min-height:100vh
+  }
   body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,23,68,.035) 2px,rgba(255,23,68,.035) 4px)}
   #matrix{position:fixed;inset:0;pointer-events:none;opacity:.22;z-index:0}
   .wrap{position:relative;z-index:1}
@@ -41,6 +44,17 @@
   .ok{color:var(--ok);border-color:var(--ok)}
   .pending{color:var(--red2);border-color:var(--red2)}
   .info{margin-top:.8rem;padding:.7rem;border:1px dashed #3e0000;background:rgba(139,0,0,.08);font-family:'Share Tech Mono',monospace;font-size:.7rem;color:#ff9aaa}
+  .actions{display:flex;gap:.45rem;flex-wrap:wrap;align-items:center}
+  .btn-mini{font-family:'Share Tech Mono',monospace;font-size:.62rem;background:transparent;border:1px solid var(--red2);color:var(--red2);padding:.22rem .55rem;cursor:pointer}
+  .btn-mini:hover{background:rgba(255,23,68,.1)}
+  .btn-mini.download{border-color:var(--ok);color:var(--ok)}
+  .btn-mini.download:hover{background:rgba(0,255,136,.1)}
+  .account-user{font-weight:700;letter-spacing:.4px}
+  .account-email{color:var(--dim);font-size:.74rem}
+  .role-owner{color:#ff7bff;border-color:#ff7bff;background:rgba(255,123,255,.08)}
+  .role-admin{color:var(--red2);border-color:var(--red2);background:rgba(255,23,68,.08)}
+  .role-editor{color:#f1c40f;border-color:#f1c40f;background:rgba(241,196,15,.08)}
+  .role-viewer{color:var(--ok);border-color:var(--ok);background:rgba(0,255,136,.08)}
 </style>
 </head>
 <body>
@@ -57,6 +71,7 @@
     <button class="tab" data-tab="jadwal">JADWAL</button>
     <button class="tab" data-tab="tugas">TUGAS</button>
     <button class="tab" data-tab="statistik">STATISTIK</button>
+    <button class="tab" data-tab="akun">AKUN</button>
   </div>
 
   <main class="main">
@@ -85,12 +100,19 @@
     <section class="panel" id="p-statistik">
       <div class="grid" id="stat-box"></div>
     </section>
+    <section class="panel" id="p-akun">
+      <table class="table">
+        <thead><tr><th>AKUN</th><th>ROLE</th><th>AKSI CEPAT</th></tr></thead>
+        <tbody id="tb-akun"></tbody>
+      </table>
+    </section>
   </main>
 </div>
 
 <script>
 const API_BASE = window.location.origin;
 const TOKEN = localStorage.getItem('zieebot_token') || '';
+let akunRows = [];
 const DEMO = {
   mahasiswa: [
     { nama:'Alya Putri', nim:'2024001', jurusan:'Teknik Informatika', aktif:true },
@@ -124,6 +146,7 @@ function tabInit(){
       document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('p-' + btn.dataset.tab).classList.add('active');
+      if (btn.dataset.tab === 'akun') loadAkun();
     });
   });
 }
@@ -150,6 +173,71 @@ function renderStats(mhs, jadwal, tugas){
   document.getElementById('stat-box').innerHTML = perMhs.join('');
 }
 
+function renderAkun(rows){
+  const el = document.getElementById('tb-akun');
+  if (!el) return;
+  if (!rows.length) {
+    el.innerHTML = '<tr><td colspan="3" class="mini">Akun tidak tersedia atau akses ditolak</td></tr>';
+    return;
+  }
+  const roleClass = (role) => {
+    if (role === 'owner') return 'role-owner';
+    if (role === 'admin') return 'role-admin';
+    if (role === 'editor') return 'role-editor';
+    return 'role-viewer';
+  };
+  el.innerHTML = rows.map(a => `
+    <tr>
+      <td>
+        <div class="account-user">${a.username || '-'}</div>
+        <div class="account-email">${a.email || '-'}</div>
+      </td>
+      <td><span class="badge ${roleClass(a.role)}">${(a.role || '-').toUpperCase()}</span></td>
+      <td>
+        <div class="actions">
+          <button class="btn-mini download" onclick="downloadAkun('${a.id}')">DOWNLOAD JSON</button>
+          <button class="btn-mini" onclick="deleteAkun('${a.id}','${(a.username || '').replace(/'/g, "\\'")}')">DELETE AKUN</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function loadAkun() {
+  const data = await api('/auth/users');
+  akunRows = data || [];
+  renderAkun(akunRows);
+}
+
+async function downloadAkun(id) {
+  try {
+    const r = await fetch(`${API_BASE}/auth/users/${id}/export`, { headers: { 'x-auth-token': TOKEN } });
+    if (!r.ok) throw new Error('Akses ditolak / akun tidak ditemukan');
+    const blob = await r.blob();
+    const file = r.headers.get('content-disposition')?.match(/filename="(.+)"/)?.[1] || `akun_${id}.json`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert(e.message || 'Gagal download akun');
+  }
+}
+
+async function deleteAkun(id, username) {
+  if (!confirm(`Hapus akun "${username}"?`)) return;
+  try {
+    const r = await fetch(`${API_BASE}/auth/users/${id}`, { method: 'DELETE', headers: { 'x-auth-token': TOKEN } });
+    const j = await r.json();
+    if (!j.success) throw new Error(j.error || 'Gagal hapus akun');
+    await loadAkun();
+  } catch (e) {
+    alert(e.message || 'Gagal hapus akun');
+  }
+}
+
 function initMatrix(){
   const c = document.getElementById('matrix'); const x = c.getContext('2d');
   const rs = ()=>{ c.width=innerWidth; c.height=innerHeight; }; rs(); addEventListener('resize', rs);
@@ -173,6 +261,7 @@ async function init(){
   renderRows('tb-jadwal', finalJadwal, j=>`<tr><td>${j.hari}</td><td>${j.jam}</td><td>${j.matkul}</td><td>${j.nama_mhs||j.nama||'-'}</td></tr>`);
   renderRows('tb-tugas', finalTugas, t=>`<tr><td>${t.nama}</td><td>${t.nama_mhs||'-'}</td><td>${t.matkul||'-'}</td><td>${t.deadline||'-'}</td><td><span class="badge ${t.status==='done'?'ok':'pending'}">${t.status==='done'?'DONE':'PENDING'}</span></td></tr>`);
   renderStats(finalMhs, finalJadwal, finalTugas);
+  await loadAkun();
 }
 init();
 </script>

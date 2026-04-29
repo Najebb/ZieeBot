@@ -25,7 +25,10 @@
     --font-body:'Rajdhani', sans-serif;
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; overflow-x: hidden; }
+  body {
+    background: radial-gradient(ellipse at center, rgba(139,0,0,.13) 0%, transparent 60%), var(--bg);
+    color: var(--text); font-family: var(--font-body); min-height: 100vh; overflow-x: hidden;
+  }
   body::before {
     content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
     background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(139,0,0,.016) 2px, rgba(139,0,0,.016) 4px);
@@ -204,6 +207,13 @@
   .btn-red  { color: var(--red);  border-color: var(--red);  }
   .btn-red:hover  { background: var(--red);  color: #000; box-shadow: 0 0 14px var(--red-dim); }
   .btn-sm { padding: .3rem .8rem; font-size: .65rem; }
+  .inline-actions { display: flex; gap: .45rem; flex-wrap: wrap; align-items: center; }
+  .account-user { font-weight: 700; letter-spacing: .4px; }
+  .account-email { color: var(--text-dim); font-size: .75rem; }
+  .role-owner { color: #ff7bff; border-color: #ff7bff; background: rgba(255,123,255,.08); }
+  .role-admin { color: var(--red); border-color: var(--red); background: rgba(255,23,68,.08); }
+  .role-editor { color: var(--gold); border-color: var(--gold); background: rgba(241,196,15,.08); }
+  .role-viewer { color: #00ff88; border-color: #00ff88; background: rgba(0,255,136,.08); }
 
   /* Notif */
   #notif { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--bg2); border: 1px solid var(--red); padding: .75rem 1.5rem; font-family: var(--font-mono); font-size: .8rem; color: var(--red); z-index: 99999; transform: translateX(120%); transition: transform .3s; box-shadow: 0 0 20px rgba(139,0,0,.3); }
@@ -236,6 +246,7 @@
   <button class="tab-btn" data-tab="queue">📋 QUEUE</button>
   <button class="tab-btn" data-tab="history">📜 HISTORY</button>
   <button class="tab-btn" data-tab="stats">📊 STATISTIK</button>
+  <button class="tab-btn" data-tab="accounts">👤 AKUN</button>
   <button class="tab-btn" data-tab="mascot" style="color:var(--red)">M-BEAT <span style="font-size:.55rem;color:#ff4444;margin-left:4px;animation:blink 1s infinite">◆</span></button>
 </nav>
 
@@ -377,6 +388,21 @@
     <div>
       <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--red);letter-spacing:2px;margin-bottom:1rem;">// RIWAYAT TERBARU (10)</div>
       <div class="top-tracks" id="recent-plays-list"></div>
+    </div>
+  </div>
+
+  <!-- ══ ACCOUNT TAB ══ -->
+  <div class="tab-panel" id="tab-accounts">
+    <p class="section-label">SELECT * FROM auth_users ORDER BY role</p>
+    <div class="table-wrap">
+      <div class="table-head">
+        <span class="table-title">AKUN DASHBOARD</span>
+        <button class="btn btn-red btn-sm" onclick="loadAccounts()">REFRESH</button>
+      </div>
+      <table>
+        <thead><tr><th>AKUN</th><th>ROLE</th><th>AKSI CEPAT</th></tr></thead>
+        <tbody id="accounts-body"><tr class="empty-row"><td colspan="4">Memuat akun...</td></tr></tbody>
+      </table>
     </div>
   </div>
 
@@ -559,6 +585,7 @@ let elapsed    = 0;
 let totalSec   = 0;
 let elapsedTimer = null;
 let historyAll = [];
+let accountData = [];
 const DEMO_MUSIC = {
   history: [
     { title: 'Night Drive', duration: '3:21', requested_by: 'Alya', played_at: Math.floor(Date.now()/1000)-4200 },
@@ -631,6 +658,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'history') loadHistoryTab();
     if (btn.dataset.tab === 'stats')   loadStatsTab();
     if (btn.dataset.tab === 'queue')   loadQueueTab();
+    if (btn.dataset.tab === 'accounts') loadAccounts();
   });
 });
 
@@ -668,6 +696,71 @@ async function loadAll() {
 
   if (!hasMusicData || !hasQueueData) {
     showNotif('Mode contoh data aktif (API kosong/tidak tersedia).');
+  }
+}
+
+async function loadAccounts() {
+  const res = await api('GET', '/auth/users');
+  accountData = res && res.success ? (res.data || []) : [];
+  renderAccountsTable();
+}
+
+function renderAccountsTable() {
+  const tbody = document.getElementById('accounts-body');
+  if (!tbody) return;
+  if (!accountData.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="3">Akun tidak tersedia atau akses ditolak</td></tr>';
+    return;
+  }
+  const roleClass = (role) => {
+    if (role === 'owner') return 'role-owner';
+    if (role === 'admin') return 'role-admin';
+    if (role === 'editor') return 'role-editor';
+    return 'role-viewer';
+  };
+  tbody.innerHTML = accountData.map(a => `
+    <tr>
+      <td>
+        <div class="account-user">${a.username || '-'}</div>
+        <div class="account-email">${a.email || '-'}</div>
+      </td>
+      <td><span class="badge ${roleClass(a.role)}">${(a.role || '-').toUpperCase()}</span></td>
+      <td>
+        <div class="inline-actions">
+          <button class="btn btn-red btn-sm" onclick="downloadAccount('${a.id}')">DOWNLOAD JSON</button>
+          <button class="btn btn-red btn-sm" onclick="deleteAccount('${a.id}','${(a.username || '').replace(/'/g, "\\'")}')">DELETE AKUN</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function downloadAccount(id) {
+  try {
+    const res = await fetch(`${API_BASE}/auth/users/${id}/export`, { headers: { 'x-auth-token': AUTH_TOKEN } });
+    if (!res.ok) throw new Error('Akses ditolak / akun tidak ditemukan');
+    const blob = await res.blob();
+    const file = res.headers.get('content-disposition')?.match(/filename="(.+)"/)?.[1] || `akun_${id}.json`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file;
+    a.click();
+    URL.revokeObjectURL(url);
+    showNotif('Download akun berhasil.');
+  } catch (e) {
+    showNotif(e.message || 'Gagal download akun.', true);
+  }
+}
+
+async function deleteAccount(id, username) {
+  if (!confirm(`Hapus akun "${username}"?`)) return;
+  const res = await api('DELETE', `/auth/users/${id}`);
+  if (res && res.success) {
+    showNotif('Akun berhasil dihapus.');
+    await loadAccounts();
+  } else {
+    showNotif(res?.error || 'Gagal hapus akun.', true);
   }
 }
 
