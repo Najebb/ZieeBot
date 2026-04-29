@@ -16,6 +16,8 @@ const path     = require('path');
 const fs       = require('fs');
 const { chromium } = require('playwright');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const Tesseract = require('tesseract.js');
+const { Jimp } = require('jimp');
 
 // ── Setup DB ─────────────────────────────────────────────────────────────────
 const DATA_DIR = path.join(__dirname, '../data');
@@ -80,6 +82,23 @@ const AbsenLog = {
   `).all(),
 };
 
+function buildSummaryLogItems(result) {
+  const msg = String(result?.message || '').trim();
+  if (!msg) return [];
+  // Simpan ringkasan ketika tidak ada detail kelas, mis. "sudah absen sebelumnya".
+  if (result?.absen_list?.length) return [];
+  if (/sudah terabsen|sudah absen/i.test(msg)) {
+    return [{ kelas: 'SEMUA KELAS', status: 'berhasil', pesan: msg }];
+  }
+  if (/belum masuk waktu absen|tidak ada jadwal aktif/i.test(msg)) {
+    return [{ kelas: 'SEMUA KELAS', status: 'info', pesan: msg }];
+  }
+  if (/login gagal|captcha|error/i.test(msg)) {
+    return [{ kelas: 'LOGIN', status: 'gagal', pesan: msg }];
+  }
+  return [{ kelas: 'SEMUA KELAS', status: 'info', pesan: msg }];
+}
+
 // ── Bot ───────────────────────────────────────────────────────────────────────
 const BASE_URL       = 'https://simkuliah.usk.ac.id';
 const LOGIN_URL      = `${BASE_URL}/index.php/login`;
@@ -87,19 +106,133 @@ const ABSENSI_URL    = `${BASE_URL}/index.php/absensi`;
 const KONFIRMASI_URL = `${BASE_URL}/index.php/absensi/konfirmasi_kehadiran`;
 const runningJobs    = new Set();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const GEMINI_MODEL_CANDIDATES = [
+  process.env.GEMINI_MODEL,
+  'gemini-2.0-flash',
+  'gemini-1.5-flash-latest',
+].filter(Boolean);
+
+function isOutsideAttendanceTimeMessage(msg) {
+  const t = String(msg || '').toLowerCase();
+  return /belum.*(waktu|jam)|di luar.*(waktu|jam)|waktu absen|jadwal.*belum dimulai|sudah berakhir|belum bisa absen/.test(t);
+}
+
+function pickCaptchaCandidate(raw) {
+  const text = String(raw || '').replace(/\s+/g, '');
+  const candidates = text.match(/[A-Za-z0-9]{4,8}/g) || [];
+  if (!candidates.length) return '';
+  const bannedFragments = ['SIM', 'KULIAH', 'LOGIN', 'AKUN', 'NPM', 'VERIFIKASI', 'PEG'];
+  const filtered = candidates.filter((c) => {
+    const up = c.toUpperCase();
+    if (up.length < 5 || up.length > 6) return false; // captcha umumnya 5-6 char
+    return !bannedFragments.some((frag) => up.includes(frag));
+  });
+  if (!filtered.length) return '';
+  // Prioritaskan token alfanumerik dengan panjang paling umum captcha (5-6).
+  filtered.sort((a, b) => {
+    const score = (s) => {
+      if (s.length === 5 || s.length === 6) return 3;
+      if (s.length === 4 || s.length === 7) return 2;
+      return 1;
+    };
+    return score(b) - score(a);
+  });
+  return filtered[0];
+}
 
 async function readCaptcha(buf) {
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-  const result = await model.generateContent([
-    "Baca karakter CAPTCHA di gambar ini. Jawab HANYA karakter CAPTCHA-nya saja. Tanpa spasi atau penjelasan apapun.",
-    {
-      inlineData: {
-        data: buf.toString('base64'),
-        mimeType: "image/png",
-      },
+  let lastErr = null;
+
+  for (const modelName of GEMINI_MODEL_CANDIDATES) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent([
+        "Baca karakter CAPTCHA di gambar ini. Jawab HANYA karakter CAPTCHA-nya saja. Tanpa spasi atau penjelasan apapun.",
+        {
+          inlineData: {
+            data: buf.toString('base64'),
+            mimeType: "image/png",
+          },
+        }
+      ]);
+      const parsed = pickCaptchaCandidate(result.response.text());
+      if (!parsed) throw new Error('Captcha Gemini tidak valid.');
+      return {
+        text: parsed,
+        provider: `gemini:${modelName}`,
+      };
+    } catch (e) {
+      lastErr = e;
+      const msg = String(e?.message || e);
+      // Coba model berikutnya jika model tidak ditemukan/unsupported.
+      if (!/not found|not supported|404/i.test(msg)) break;
     }
-  ]);
-  return result.response.text().trim().replace(/\s+/g, '');
+  }
+
+  // Fallback OCR lokal (tanpa Gemini quota/key)
+  try {
+    const variants = [buf];
+
+    // Preprocessing beberapa varian untuk meningkatkan akurasi OCR captcha.
+    const buildVariant = async (thresholdMax, invert = false) => {
+      const img = await Jimp.read(buf);
+      img.greyscale().contrast(0.7).normalize().resize({ w: img.bitmap.width * 3, h: img.bitmap.height * 3 });
+      img.posterize(3);
+      img.threshold({ max: thresholdMax });
+      if (invert) img.invert();
+      return await img.getBuffer('image/png');
+    };
+
+    variants.push(await buildVariant(175, false));
+    variants.push(await buildVariant(155, false));
+    variants.push(await buildVariant(170, true));
+
+    let best = null;
+    for (const vb of variants) {
+      const ocr = await Tesseract.recognize(vb, 'eng', {
+        logger: () => {},
+        tessedit_pageseg_mode: 8, // single word
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
+      });
+      const raw = String(ocr?.data?.text || '').trim();
+      const parsed = pickCaptchaCandidate(raw);
+      if (!parsed) continue;
+      const conf = Number(ocr?.data?.confidence || 0);
+      if (!best || conf > best.conf) best = { parsed, conf };
+    }
+
+    if (best?.parsed) return { text: best.parsed, provider: 'tesseract' };
+  } catch (ocrErr) {
+    if (!lastErr) lastErr = ocrErr;
+  }
+
+  throw lastErr || new Error('Gagal membaca captcha via Gemini dan OCR lokal.');
+}
+
+async function captureCaptchaBuffer(page) {
+  // 1) Ambil langsung dari <img id="captcha-img"> (paling akurat)
+  try {
+    const img = page.locator('#captcha-img').first();
+    if (await img.count()) {
+      const src = await img.getAttribute('src');
+      if (src) {
+        const abs = new URL(src, LOGIN_URL).toString();
+        const resp = await page.request.get(abs, { timeout: 10000 });
+        if (resp.ok()) return Buffer.from(await resp.body());
+      }
+    }
+  } catch {}
+
+  // 2) Fallback screenshot elemen captcha
+  for (const sel of ['#captcha-img', "img[src*='captcha']", "img[src*='kode']", 'canvas']) {
+    try {
+      const el = page.locator(sel).first();
+      const box = await el.boundingBox({ timeout: 1500 });
+      if (box) return await el.screenshot();
+    } catch {}
+  }
+
+  return null;
 }
 
 async function runAbsen({ npm, password }) {
@@ -114,27 +247,44 @@ async function runAbsen({ npm, password }) {
     // Login
     await page.goto(LOGIN_URL, { waitUntil: 'networkidle', timeout: 20000 });
     let loggedIn = false;
+    let invalidCaptchaCount = 0;
 
+    let lastCaptchaProvider = 'unknown';
     for (let i = 1; i <= 3; i++) {
-      await page.fill('input[placeholder="NIP/NPM"]',  npm);
-      await page.fill('input[placeholder="Password"]', password);
+      await page.fill('input[placeholder="NIP/NPM"], input[name="username"], input[name="npm"]', npm);
+      await page.fill('input[placeholder="Password"], input[name="password"]', password);
 
       // Baca captcha
       let captchaText = '';
-      for (const sel of ["img[src*='captcha']", "img[src*='kode']", "canvas"]) {
+      const captchaBuf = await captureCaptchaBuffer(page);
+      if (captchaBuf) {
         try {
-          const el  = page.locator(sel).first();
-          const box = await el.boundingBox({ timeout: 2000 });
-          if (box) { captchaText = await readCaptcha(await el.screenshot()); break; }
+          const cap = await readCaptcha(captchaBuf);
+          captchaText = cap.text;
+          lastCaptchaProvider = cap.provider || lastCaptchaProvider;
         } catch {}
       }
-      if (!captchaText) captchaText = await readCaptcha(await page.screenshot({ clip: { x:0, y:0, width:700, height:500 } }));
+      if (!captchaText) {
+        try {
+          const cap = await readCaptcha(await page.screenshot({ clip: { x:0, y:0, width:700, height:500 } }));
+          captchaText = cap.text;
+          lastCaptchaProvider = cap.provider || lastCaptchaProvider;
+        } catch (e) {}
+      }
 
-      console.log(`[Login attempt ${i}] captcha: "${captchaText}"`);
-      await page.fill('input[placeholder="Masukkan kode verifikasi"]', captchaText);
+      if (!captchaText) {
+        console.log(`[Login attempt ${i}] captcha tidak terbaca valid, refresh & retry`);
+        invalidCaptchaCount++;
+        try { await page.click('.ti-reload, #refresh', { timeout: 2000 }); } catch { await page.reload({ waitUntil: 'networkidle' }); }
+        await page.waitForTimeout(800);
+        continue;
+      }
+
+      console.log(`[Login attempt ${i}] provider: ${lastCaptchaProvider}, captcha: "${captchaText}"`);
+      await page.fill('input[placeholder="Masukkan kode verifikasi"], input[name="captcha"], input[id*="captcha"]', captchaText);
       await Promise.all([
         page.waitForLoadState('networkidle', { timeout: 20000 }),
-        page.click('button:has-text("Login")'),
+        page.click('button[type="submit"], button:has-text("Login")'),
       ]);
 
       if (!page.url().includes('login')) { loggedIn = true; break; }
@@ -143,7 +293,17 @@ async function runAbsen({ npm, password }) {
       await page.waitForTimeout(600);
     }
 
-    if (!loggedIn) return { success: false, message: 'Login gagal. Cek NPM/password.', absen_list: [] };
+    if (!loggedIn) {
+      const failMessage = invalidCaptchaCount >= 2
+        ? 'Login gagal: CAPTCHA tidak terbaca valid. Coba lagi atau aktifkan Gemini API.'
+        : 'Login gagal. Cek NPM/password.';
+      return {
+        success: false,
+        message: failMessage,
+        absen_list: [],
+        captcha_provider: lastCaptchaProvider
+      };
+    }
 
     // Halaman absensi
     await page.goto(ABSENSI_URL, { waitUntil: 'networkidle', timeout: 20000 });
@@ -187,7 +347,13 @@ async function runAbsen({ npm, password }) {
 
     if (jadwalList.length === 0) {
       const sudah = await page.locator('text=Anda sudah absen').count();
-      return { success: true, message: sudah > 0 ? 'Sudah terabsen semua.' : 'Tidak ada jadwal aktif.', absen_list: [] };
+      return {
+        success: true,
+        message: sudah > 0 ? 'Sudah terabsen semua.' : 'Belum masuk waktu absen / tidak ada jadwal aktif saat ini.',
+        absen_list: [],
+        outside_time: !sudah,
+        captcha_provider: lastCaptchaProvider
+      };
     }
 
     // Konfirmasi satu per satu
@@ -226,10 +392,24 @@ async function runAbsen({ npm, password }) {
     }
 
     const berhasil = absen_list.filter(x => x.status === 'berhasil').length;
-    return { success: true, message: `Selesai: ${berhasil}/${absen_list.length} berhasil.`, absen_list };
+    const allOutsideTime = absen_list.length > 0 &&
+      berhasil === 0 &&
+      absen_list.every((x) => isOutsideAttendanceTimeMessage(x.pesan));
+
+    const message = allOutsideTime
+      ? 'Belum masuk waktu absen untuk jadwal saat ini.'
+      : `Selesai: ${berhasil}/${absen_list.length} berhasil.`;
+
+    return {
+      success: true,
+      message,
+      absen_list,
+      outside_time: allOutsideTime,
+      captcha_provider: lastCaptchaProvider
+    };
 
   } catch(e) {
-    return { success: false, message: `Error: ${e.message}`, absen_list: [] };
+    return { success: false, message: `Error: ${e.message}`, absen_list: [], captcha_provider: 'unknown' };
   } finally {
     await browser.close();
   }
@@ -276,7 +456,8 @@ router.post('/absen/all', async (req, res) => {
 
   const jobs = accounts.map(async acc => {
     const result = await runAbsen({ npm: acc.npm, password: Accounts.getPassword(acc.id) });
-    if (result.absen_list.length) AbsenLog.insert(acc.id, result.absen_list);
+    const items = result.absen_list?.length ? result.absen_list : buildSummaryLogItems(result);
+    if (items.length) AbsenLog.insert(acc.id, items);
     return { account_id: acc.id, nama: acc.nama, npm: acc.npm, ...result };
   });
 
@@ -295,7 +476,8 @@ router.post('/absen/:id', async (req, res) => {
   runningJobs.add(id);
   try {
     const result = await runAbsen({ npm: account.npm, password: Accounts.getPassword(id) });
-    if (result.absen_list.length) AbsenLog.insert(id, result.absen_list);
+    const items = result.absen_list?.length ? result.absen_list : buildSummaryLogItems(result);
+    if (items.length) AbsenLog.insert(id, items);
     res.json({ success: result.success, message: result.message, data: result.absen_list });
   } catch(e) {
     res.status(500).json({ success: false, message: e.message, data: [] });

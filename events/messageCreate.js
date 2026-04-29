@@ -51,6 +51,12 @@ const updateHistory = [
     title: '🔄 Update Bot Jebb v1.7',
     desc: '**Fitur Baru:**\n• 📖 `/help` diperbarui untuk kategori command Music & Economy\n• 🧭 `!update` sekarang memuat histori sampai v1.7\n• 🧪 Validasi jumlah command load/deploy diperjelas\n• 🛠️ Perapihan minor untuk konsistensi command catalog',
     color: '#f39c12'
+  },
+  {
+    version: 'v1.8',
+    title: '🔄 Update Bot Jebb v1.8',
+    desc: '**Fitur Baru (Sudah Rilis):**\n• 🎯 Integrasi **ABSEN SIMKULIAH** di dashboard Akademik (tab Akun/Add/Log)\n• 🔐 Backend proxy absen + enkripsi AES-256 + database `absen.db` (accounts & absen_log)\n• 🤖 Otomasi login Playwright + OCR captcha (Gemini dengan fallback Tesseract lokal)\n• 🧭 Notifikasi status lebih jelas: belum waktu absen, captcha invalid, dan login summary\n• 📜 Log absen sekarang simpan juga status ringkasan (mis. \"sudah absen sebelumnya\")',
+    color: '#8e44ad'
   }
 ];
 
@@ -143,7 +149,7 @@ module.exports = {
     const command = args.shift().toLowerCase();
 
     if (command === 'update') {
-      let page = updateHistory.length - 1; // Mulai dari update terbaru (v1.7)
+      let page = updateHistory.length - 1; // Mulai dari update terbaru (v1.8)
       const embed = createUpdateEmbed(page, client);
       const buttons = createUpdateButtons(page);
 

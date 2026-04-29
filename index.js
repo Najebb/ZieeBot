@@ -188,6 +188,23 @@ app.use('/auth', require('./routes/auth').router);
 app.use('/api', require('./routes/api'));
 app.use('/api', absenProxy);
 
+// Public config untuk frontend (aman, tanpa secret)
+app.get('/api/public/client-config', (req, res) => {
+  const cid = process.env.CLIENT_ID || '';
+  const inviteUrl = cid
+    ? `https://discord.com/oauth2/authorize?client_id=${encodeURIComponent(cid)}&permissions=8&scope=bot%20applications.commands`
+    : '';
+  res.json({
+    success: true,
+    data: {
+      clientId: cid,
+      inviteUrl,
+      supportUrl: process.env.SUPPORT_SERVER_URL || '',
+      docsUrl: process.env.DOCS_URL || ''
+    }
+  });
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({

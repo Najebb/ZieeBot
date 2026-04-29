@@ -1,5 +1,5 @@
 /* ================================================
-   ZieeBot Website v3.0 — script.js
+   ZieeBot Website v3.1 — script.js
    Auth + Edit/Delete + CSV Export + Charts
    ================================================ */
 
@@ -303,12 +303,62 @@ async function loadChartData() {
 /* ================================================
    TAB SYSTEM
    ================================================ */
+/* ===== AKADEMIK DASHBOARD NAVIGATION ===== */
+function showAkademikDashboard() {
+  // Hide main sections like SPA navigation
+  ['hero','stats','features','dashboards','invite'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const footerEl = document.querySelector('footer');
+  const navEl = document.querySelector('nav');
+  if (footerEl) footerEl.style.display = 'none';
+  if (navEl) navEl.style.display = 'none';
+  
+  // Hide SPA container
+  const spaEl = document.getElementById('spaContainer');
+  if (spaEl) spaEl.style.display = 'none';
+  
+  // Show & scroll to #kelas
+  const kelasEl = document.getElementById('kelas');
+  if (kelasEl) {
+    kelasEl.style.display = 'block';
+    kelasEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    // Activate default tab (mahasiswa)
+    setTimeout(() => switchTab('mahasiswa'), 200);
+  }
+}
+
+function goBackToHub() {
+  // Show main sections
+  ['hero','stats','features','dashboards','invite'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = '';
+  });
+  const footerEl = document.querySelector('footer');
+  const navEl = document.querySelector('nav');
+  if (footerEl) footerEl.style.display = '';
+  if (navEl) navEl.style.display = '';
+  
+  // Hide akademik
+  const kelasEl = document.getElementById('kelas');
+  if (kelasEl) kelasEl.style.display = 'none';
+  
+  // Scroll to hub
+  const hubEl = document.getElementById('dashboards');
+  if (hubEl) {
+    hubEl.scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
 function switchTab(id) {
-  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+  // Handle akademik tabs
+  document.querySelectorAll('#kelas .tab-btn').forEach((b, i) => {
     const ids = ['mahasiswa', 'jadwal', 'tugas', 'statistik', 'tambah', 'absen'];
     b.classList.toggle('active', ids[i] === id);
   });
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('#kelas .tab-panel').forEach(p => p.classList.remove('active'));
   const panel = document.getElementById('tab-' + id);
   if (panel) panel.classList.add('active');
 
@@ -316,6 +366,64 @@ function switchTab(id) {
   if (id === 'jadwal')    loadJadwal();
   if (id === 'tugas')     loadTugas();
   if (id === 'statistik') loadChartData();
+  
+  // Auto-load absen data when absen tab opened
+  if (id === 'absen') {
+    setTimeout(() => {
+      const accountsView = document.getElementById('absenView-accounts');
+      if (accountsView) switchAbsenView('accounts');
+    }, 100);
+  }
+}
+
+// Ensure onclick handlers work globally by re-binding after dashboard show
+function rebindAkademikTabs() {
+  document.querySelectorAll('#kelas .tab-btn').forEach(btn => {
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    newBtn.addEventListener('click', function(e) {
+      const tabText = this.textContent.toLowerCase().trim();
+      let tabId;
+      if (tabText.includes('mahasiswa')) tabId = 'mahasiswa';
+      else if (tabText.includes('jadwal')) tabId = 'jadwal';
+      else if (tabText.includes('tugas')) tabId = 'tugas';
+      else if (tabText.includes('statistik')) tabId = 'statistik';
+      else if (tabText.includes('tambah')) tabId = 'tambah';
+      else if (tabText.includes('absen')) tabId = 'absen';
+      
+      if (tabId) switchTab(tabId);
+    });
+  });
+}
+
+// Update showAkademikDashboard to rebind tabs
+function showAkademikDashboard() {
+  // Hide main sections like SPA navigation
+  ['hero','stats','features','dashboards','invite'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const footerEl = document.querySelector('footer');
+  const navEl = document.querySelector('nav');
+  if (footerEl) footerEl.style.display = 'none';
+  if (navEl) navEl.style.display = 'none';
+  
+  // Hide SPA container
+  const spaEl = document.getElementById('spaContainer');
+  if (spaEl) spaEl.style.display = 'none';
+  
+  // Show & scroll to #kelas
+  const kelasEl = document.getElementById('kelas');
+  if (kelasEl) {
+    kelasEl.style.display = 'block';
+    kelasEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    // Activate default tab (mahasiswa) + rebind all tabs
+    setTimeout(() => {
+      switchTab('mahasiswa');
+      rebindAkademikTabs();
+    }, 300);
+  }
 }
 
 /* ================================================
@@ -1176,7 +1284,7 @@ function initRipple() {
 function initBootSequence() {
   const overlay = document.getElementById('bootOverlay');
   if (!overlay) return;
-  const lines = ['> INITIALIZING ZIEEBOT v3.0...','> LOADING AUTH MODULES...','> CONNECTING TO DATABASE...','> AKADEMIK DASHBOARD READY...','> ALL SYSTEMS OPERATIONAL ✓'];
+  const lines = ['> INITIALIZING ZIEEBOT v3.1...','> LOADING AUTH MODULES...','> CONNECTING TO DATABASE...','> AKADEMIK DASHBOARD READY...','> ALL SYSTEMS OPERATIONAL ✓'];
   const logEl = document.getElementById('bootLog');
   let i = 0;
   function addLine() {
@@ -1197,6 +1305,41 @@ function initBootSequence() {
     }
   }
   addLine();
+}
+
+async function initInviteLinks() {
+  const inviteTargets = ['navInviteBtn', 'heroInviteBtn', 'inviteBotBtn'];
+  const supportBtn = document.getElementById('supportServerBtn');
+  const docsBtn = document.getElementById('docsBtn');
+
+  try {
+    const res = await fetch('/api/public/client-config');
+    const json = await res.json();
+    const cfg = json?.data || {};
+
+    if (cfg.inviteUrl) {
+      inviteTargets.forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.href = cfg.inviteUrl;
+        el.target = '_blank';
+        el.rel = 'noopener noreferrer';
+      });
+    }
+
+    if (supportBtn && cfg.supportUrl) {
+      supportBtn.href = cfg.supportUrl;
+      supportBtn.target = '_blank';
+      supportBtn.rel = 'noopener noreferrer';
+    }
+    if (docsBtn && cfg.docsUrl) {
+      docsBtn.href = cfg.docsUrl;
+      docsBtn.target = '_blank';
+      docsBtn.rel = 'noopener noreferrer';
+    }
+  } catch (e) {
+    console.warn('Gagal memuat link invite:', e?.message || e);
+  }
 }
 
 /* ================================================
@@ -1226,6 +1369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initRipple();
   initStatCounter();
   initScrollReveal();
+  initInviteLinks();
 
   // Cek auth
   const authed = await checkAuth();
@@ -1497,25 +1641,16 @@ function switchAbsenView(view) {
   if (view === 'log')      loadAbsenLog();
 }
 
-// Override switchTab untuk load data saat tab absen dibuka
-const _origSwitchTab = typeof switchTab === 'function' ? switchTab : null;
-function switchTab(name) {
-  if (_origSwitchTab) _origSwitchTab(name);
-
-  // Setelah tab absen dibuka, load daftar akun
-  if (name === 'absen') {
-    setTimeout(() => {
-      switchAbsenView('accounts');
-    }, 50);
-  }
-}
+// NOTE:
+// Jangan override switchTab di bawah ini.
+// Handler tab utama sudah meng-handle tab "absen" di fungsi switchTab utama.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Load daftar akun
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function loadAkunAbsen() {
-  const grid    = document.getElementById('akунGrid');
+  const grid    = document.getElementById('akunGrid');
   const emptyEl = document.getElementById('absenEmptyMsg');
   const countEl = document.getElementById('absenCount');
 
@@ -1581,6 +1716,12 @@ async function loadAkunAbsen() {
             style="flex:1;min-width:120px;font-size:0.68rem;padding:8px 12px;">
             ⚡ ABSEN
           </button>
+          <button class="add-btn" id="retry-btn-${acc.id}"
+            onclick="retryAbsenCaptcha(${acc.id}, '${escHtml(acc.nama)}', 5)"
+            style="background:transparent;border:1px solid #555;color:#ffcc66;
+              min-width:140px;font-size:0.63rem;padding:8px 12px;letter-spacing:1px;">
+            🔁 RETRY CAPTCHA x5
+          </button>
           <button onclick="hapusAkun(${acc.id}, '${escHtml(acc.nama)}')"
             style="background:transparent;border:1px solid #3E0000;
               color:#ff4444;padding:8px 12px;font-family:'Share Tech Mono',monospace;
@@ -1622,19 +1763,56 @@ async function absenSatu(id, nama) {
     if (data.success) {
       setAbsenState(btn, badge, 'success');
       showAbsenResult(resultEl, data.data || [], true);
-      showStatusBar(`✅ ${nama}: ${data.message}`, 'success');
+      if (data.outside_time) {
+        showStatusBar(`⏰ ${nama}: ${data.message}`, 'warning');
+      } else {
+        showStatusBar(`✅ ${nama}: ${data.message}`, 'success');
+      }
+      return data;
     } else {
       setAbsenState(btn, badge, 'error');
       showAbsenResult(resultEl, [], false, data.message);
       showStatusBar(`❌ ${nama}: ${data.message}`, 'error');
+      return data;
     }
   } catch (err) {
     setAbsenState(btn, badge, 'error');
     showStatusBar(`❌ Koneksi gagal: ${err.message}`, 'error');
+    return { success: false, message: err.message || 'Koneksi gagal' };
   }
 
   // Reset tombol setelah 8 detik
   setTimeout(() => setAbsenState(btn, badge, 'ready'), 8000);
+}
+
+function isCaptchaReadError(msg) {
+  return /captcha.*(tidak terbaca|invalid|gagal)/i.test(String(msg || ''));
+}
+
+async function retryAbsenCaptcha(id, nama, maxTry = 5) {
+  const retryBtn = document.getElementById(`retry-btn-${id}`);
+  if (retryBtn) {
+    retryBtn.disabled = true;
+    retryBtn.textContent = `⏳ RETRY 0/${maxTry}`;
+    retryBtn.style.opacity = '0.7';
+  }
+
+  for (let i = 1; i <= maxTry; i++) {
+    if (retryBtn) retryBtn.textContent = `⏳ RETRY ${i}/${maxTry}`;
+    const result = await absenSatu(id, nama);
+    if (!result) continue;
+    if (result.success || !isCaptchaReadError(result.message)) break;
+    if (i < maxTry) {
+      showStatusBar(`🔁 ${nama}: retry captcha ${i}/${maxTry}`, 'loading');
+      await new Promise((r) => setTimeout(r, 1200));
+    }
+  }
+
+  if (retryBtn) {
+    retryBtn.disabled = false;
+    retryBtn.textContent = '🔁 RETRY CAPTCHA x5';
+    retryBtn.style.opacity = '1';
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1659,7 +1837,12 @@ async function absenAll() {
     if (data.success) {
       const berhasil = (data.data || []).filter(x => x.success).length;
       const gagal    = (data.data || []).filter(x => !x.success).length;
-      showStatusBar(`✅ Selesai: ${berhasil} akun berhasil, ${gagal} gagal.`, 'success');
+      const outsideCount = (data.data || []).filter(x => x.outside_time).length;
+      if (outsideCount > 0 && berhasil === 0) {
+        showStatusBar(`⏰ Belum masuk waktu absen (${outsideCount} akun).`, 'warning');
+      } else {
+        showStatusBar(`✅ Selesai: ${berhasil} akun berhasil, ${gagal} gagal.`, 'success');
+      }
 
       // Update badge tiap akun
       (data.data || []).forEach(item => {
@@ -1873,6 +2056,7 @@ function showStatusBar(msg, type) {
     success: 'background:rgba(0,255,136,0.05);border-color:#00ff88;color:#00ff88;',
     error:   'background:rgba(255,23,68,0.05);border-color:var(--red-bright);color:#ff6b6b;',
     loading: 'background:rgba(255,200,0,0.05);border-color:#ffc800;color:#ffc800;',
+    warning: 'background:rgba(255,180,0,0.05);border-color:#ffb400;color:#ffcc66;',
   };
 
   bar.style.cssText += styles[type] || styles.loading;

@@ -1,6 +1,6 @@
 {
   "name": "jebb-bot",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Bot Discord Jebb dengan Slash Commands Lengkap",
   "main": "index.js",
   "scripts": {
@@ -27,9 +27,11 @@
     "dotenv": "^16.4.5",
     "express": "^5.2.1",
     "fs-extra": "^11.3.4",
+    "jimp": "^1.6.1",
     "node-fetch": "^2.7.0",
     "play-dl": "^1.9.7",
-    "playwright": "^1.44.0"
+    "playwright": "^1.44.0",
+    "tesseract.js": "^7.0.0"
   },
   "engines": {
     "node": ">=16.9.0"

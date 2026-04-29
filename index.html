@@ -106,7 +106,7 @@
   <div class="hero-grid"></div>
   <div class="hero-scan"></div>
   <div class="hero-content">
-    <span class="hero-badge hero-enter">// DISCORD BOT v3.0 //</span>
+    <span class="hero-badge hero-enter">// DISCORD BOT v3.1 //</span>
     <div class="hero-layout">
       <div class="hero-text-col">
         <h1 class="hero-title glitch-text hero-enter" data-text="ZieeBot">ZieeBot</h1>
@@ -115,7 +115,7 @@
         </div>
         <p class="hero-desc hero-enter">Bot Discord serba guna yang siap meningkatkan server kamu — dari moderasi, musik, ekonomi, hingga hiburan. Semua dalam satu bot yang powerful.</p>
         <div class="hero-btns hero-enter">
-          <a href="#invite" class="btn-primary">⚡ INVITE NOW</a>
+          <a href="#invite" class="btn-primary" id="heroInviteBtn">⚡ INVITE NOW</a>
           <a href="#features" class="btn-outline">EXPLORE FEATURES</a>
         </div>
       </div>
@@ -244,7 +244,7 @@
       </div>
 
       <!-- Akademik Card -->
-      <div onclick="switchTab('kelas')" style="
+      <div id="akademik-card" onclick="showAkademikDashboard()" style="
         background:var(--dark);padding:2rem 1.75rem;cursor:pointer;
         position:relative;overflow:hidden;transition:background .25s;
         border-top:3px solid #FF1744;
@@ -274,6 +274,14 @@
     <div class="section-header">
       <span class="section-tag reveal">// AKADEMIK //</span>
       <h2 class="section-title glitch-text reveal stagger-1" data-text="DASHBOARD KELAS">DASHBOARD KELAS</h2>
+      <button onclick="goBackToHub()" style="
+        position:absolute;top:24px;left:24px;font-family:'Share Tech Mono',monospace;
+        font-size:0.65rem;background:transparent;border:1px solid #444;color:var(--text-dim);
+        padding:8px 16px;letter-spacing:2px;cursor:pointer;transition:all 0.2s;
+      " onmouseover="this.style.borderColor='var(--red-bright)';this.style.color='var(--red-bright)'"
+         onmouseout="this.style.borderColor='#444';this.style.color='var(--text-dim)'">
+        ← KEMBALI KE HUB
+      </button>
       <div class="red-line reveal stagger-2"></div>
       <p style="margin-top:1.5rem;color:var(--text-dim);font-size:0.95rem;" class="reveal stagger-3">Portal informasi akademik — Data Mahasiswa, Jadwal, Tugas, dalam satu dashboard.</p>
     </div>
@@ -565,9 +573,9 @@
       <h2 class="invite-title glitch-text" data-text="ADD ZIEEBOT">ADD ZIEEBOT</h2>
       <p class="invite-desc">Gratis selamanya. Tidak ada fitur premium tersembunyi. Tambahkan ZieeBot ke server Discord kamu sekarang!</p>
       <div class="invite-links">
-        <a href="#" class="btn-primary">⚡ INVITE BOT</a>
-        <a href="#" class="btn-outline">💬 SUPPORT SERVER</a>
-        <a href="#" class="btn-outline">📖 DOCS</a>
+        <a href="#" class="btn-primary" id="inviteBotBtn">⚡ INVITE BOT</a>
+        <a href="#" class="btn-outline" id="supportServerBtn">💬 SUPPORT SERVER</a>
+        <a href="#" class="btn-outline" id="docsBtn">📖 DOCS</a>
       </div>
       <div style="margin-top:2rem;border-top:1px solid #1a0000;padding-top:1.5rem;">
         <span style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--text-dim);letter-spacing:2px;">MADE WITH ❤️ BY ZIEE_DEV • POWERED BY DISCORD.JS</span>
@@ -580,7 +588,7 @@
   <span class="footer-logo">ZIEEBOT</span>
   <div class="footer-line"></div>
   <p class="footer-text">© 2024 ZIEEBOT — ALL RIGHTS RESERVED</p>
-  <p style="margin-top:0.5rem;font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:#333;letter-spacing:2px;">SYSTEM ONLINE // BOT VERSION 3.0.0 // STATUS: OPERATIONAL</p>
+  <p style="margin-top:0.5rem;font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:#333;letter-spacing:2px;">SYSTEM ONLINE // BOT VERSION 3.1.0 // STATUS: OPERATIONAL</p>
 </footer>
 
 <!-- MODAL DETAIL -->

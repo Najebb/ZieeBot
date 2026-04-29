@@ -1,17 +1,20 @@
-# TODO - Dashboard Login Fix & Owner Account
+## TODO: Fix Akademik Dashboard Bug
 
-## Background
-- Error login dashboard: `Unexpected token '<', "<!DOCTYPE "... is not valid JSON`
-- Penyebab: backend tidak punya route `/auth/*`
-- Owner belum punya akun bawaan (hardcoded)
+### Plan Breakdown (Approved ✅)
+**Objective**: Fix Akademik dashboard not responding when clicked from hub.
 
-## Plan & Progress
-- [x] 1. Buat `routes/auth.js` (endpoint login/register/me/logout + owner hardcoded)
-- [x] 2. Mount `/auth` router di `index.js`
-- [x] 3. Update `script.js` agar role `owner` punya akses penuh
+**Steps** (3 total):
+- [x] **Step 1**: Edit index.html — Add id to Akademik card + update onclick handler ✅
+- [x] **Step 2**: Edit script.js — Add `showAkademikDashboard()` function + back button support ✅
+- [x] **Step 3**: Added tab click fallback handler → All internal tabs now clickable ✅
 
-## Summary Perubahan
-1. **`routes/auth.js`** — File baru. Menyediakan `/auth/login`, `/auth/register`, `/auth/me`, `/auth/logout`. User disimpan di `data/users.json`. Akun owner hardcoded (default: `owner` / `zieebot123`, bisa diubah lewat env `OWNER_USERNAME` & `OWNER_PASSWORD`).
-2. **`index.js`** — Menambahkan `app.use('/auth', require('./routes/auth').router);` agar endpoint auth tersedia.
-3. **`script.js`** — `canEdit()` dan `canDelete()` sekarang mengizinkan role `owner` (full akses).
+**Progress**: 3/3 complete ✅ | Bug fixed!
+
+**Final Status**: 🎯 Akademik Dashboard fully functional:
+- Hub click → Shows dashboard + scrolls
+- All 6 tabs clickable (Mahasiswa/Jadwal/Tugas/Statistik/Tambah/Absen)
+- Absen SIMKULIAH: Accounts/Add/Log + absen buttons work
+- Back button returns to hub
+
+**Test Command**: Open `index.html` → Dashboard Hub → Click 🎓 AKADEMIK → All tabs work → ✅
 

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZieeBot Banner Animated</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at 50% 40%, #22000f 0%, #070707 55%, #000 100%);
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+    .wrap {
+      width: min(1200px, 96vw);
+      aspect-ratio: 5 / 2;
+      position: relative;
+      border: 1px solid #3a000f;
+      background: linear-gradient(120deg, #090909 0%, #130007 45%, #090909 100%);
+      box-shadow: 0 0 30px rgba(255, 23, 68, 0.25), inset 0 0 25px rgba(255, 23, 68, 0.08);
+      overflow: hidden;
+    }
+    .grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 23, 68, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 23, 68, 0.08) 1px, transparent 1px);
+      background-size: 44px 44px;
+      opacity: 0.35;
+    }
+    .scan {
+      position: absolute;
+      inset: -100% 0 auto 0;
+      height: 80%;
+      background: linear-gradient(to bottom, rgba(255, 23, 68, 0), rgba(255, 23, 68, 0.18), rgba(255, 23, 68, 0));
+      animation: scan 3.2s linear infinite;
+    }
+    .title {
+      position: absolute;
+      left: 6%;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: clamp(34px, 5.5vw, 74px);
+      font-weight: 900;
+      letter-spacing: 6px;
+      color: #ff1744;
+      text-shadow: 0 0 12px rgba(255, 23, 68, 0.9), 0 0 26px rgba(255, 23, 68, 0.5);
+      animation: pulse 1.8s ease-in-out infinite;
+      user-select: none;
+    }
+    .subtitle {
+      position: absolute;
+      left: 6.3%;
+      bottom: 18%;
+      color: #ddd;
+      font-size: clamp(12px, 1.7vw, 20px);
+      letter-spacing: 3px;
+      opacity: 0.9;
+      user-select: none;
+    }
+    .status {
+      position: absolute;
+      right: 5%;
+      top: 20%;
+      color: #00ff88;
+      border: 1px solid #00ff88;
+      padding: 8px 16px;
+      font-size: clamp(12px, 1.3vw, 16px);
+      letter-spacing: 2px;
+      background: rgba(0, 255, 136, 0.08);
+      user-select: none;
+    }
+    .dots {
+      position: absolute;
+      right: 7%;
+      bottom: 18%;
+      display: flex;
+      gap: 10px;
+    }
+    .dots i {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ff1744;
+      box-shadow: 0 0 8px #ff1744;
+      animation: blink 1.2s infinite;
+    }
+    .dots i:nth-child(2) { animation-delay: 0.2s; }
+    .dots i:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes scan {
+      0% { transform: translateY(-120%); }
+      100% { transform: translateY(260%); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.95; }
+      50% { opacity: 0.7; }
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 0.25; transform: scale(0.95); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="grid"></div>
+    <div class="scan"></div>
+    <div class="title">ZIEEBOT</div>
+    <div class="subtitle">MULTI PURPOSE DISCORD BOT</div>
+    <div class="status">SYSTEM ONLINE</div>
+    <div class="dots"><i></i><i></i><i></i></div>
+  </div>
+</body>
+</html>
