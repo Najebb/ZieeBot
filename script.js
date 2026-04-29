@@ -305,7 +305,7 @@ async function loadChartData() {
    ================================================ */
 function switchTab(id) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
-    const ids = ['mahasiswa', 'jadwal', 'tugas', 'statistik', 'tambah'];
+    const ids = ['mahasiswa', 'jadwal', 'tugas', 'statistik', 'tambah', 'absen'];
     b.classList.toggle('active', ids[i] === id);
   });
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -1239,7 +1239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
    SPA NAVIGATION — Economy & Music Dashboard
    ================================================ */
 
-const mainSections = ['hero','stats','features','dashboards','kelas','invite'];
+const mainSections = ['hero','stats','features','dashboards','invite'];
 let spaActive = false;
 let currentSpaPage = null;
 let transitionOverlayEl = null;
@@ -1334,10 +1334,9 @@ async function navigateTo(page) {
   window.scrollTo(0, 0);
 
   try {
-    const pageFileMap = {
+const pageFileMap = {
       economy: '/economy-dashboard.html',
-      music: '/music-dashboard.html',
-      kelas: '/kelas-dashboard.html'
+      music: '/music-dashboard.html'
     };
     const file = pageFileMap[page];
     if (!file) {

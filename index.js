@@ -168,6 +168,7 @@ client.on('error', (error) => console.error(`[ERROR] ${error.message}`));
 // ========================
 const express = require('express');
 const cors = require('cors');
+const absenProxy = require('./routes/absen-proxy');
 
 const app = express();
 const PORT = process.env.PORT || process.env.SERVER_PORT || 8080;
@@ -185,6 +186,7 @@ app.use('/auth', require('./routes/auth').router);
 
 // API Routes
 app.use('/api', require('./routes/api'));
+app.use('/api', absenProxy);
 
 // Health check
 app.get('/health', (req, res) => {

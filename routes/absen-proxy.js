@@ -15,7 +15,7 @@ const crypto   = require('crypto');
 const path     = require('path');
 const fs       = require('fs');
 const { chromium } = require('playwright');
-const Anthropic    = require('@anthropic-ai/sdk');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // ── Setup DB ─────────────────────────────────────────────────────────────────
 const DATA_DIR = path.join(__dirname, '../data');
@@ -86,17 +86,20 @@ const LOGIN_URL      = `${BASE_URL}/index.php/login`;
 const ABSENSI_URL    = `${BASE_URL}/index.php/absensi`;
 const KONFIRMASI_URL = `${BASE_URL}/index.php/absensi/konfirmasi_kehadiran`;
 const runningJobs    = new Set();
-const anthropic      = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 async function readCaptcha(buf) {
-  const res = await anthropic.messages.create({
-    model: 'claude-opus-4-5', max_tokens: 20,
-    messages: [{ role: 'user', content: [
-      { type: 'image', source: { type: 'base64', media_type: 'image/png', data: buf.toString('base64') } },
-      { type: 'text',  text: 'Baca karakter captcha di gambar ini. Jawab HANYA karakter saja, tanpa spasi atau penjelasan.' },
-    ]}],
-  });
-  return res.content[0].text.trim().replace(/\s+/g, '');
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const result = await model.generateContent([
+    "Baca karakter CAPTCHA di gambar ini. Jawab HANYA karakter CAPTCHA-nya saja. Tanpa spasi atau penjelasan apapun.",
+    {
+      inlineData: {
+        data: buf.toString('base64'),
+        mimeType: "image/png",
+      },
+    }
+  ]);
+  return result.response.text().trim().replace(/\s+/g, '');
 }
 
 async function runAbsen({ npm, password }) {

@@ -244,18 +244,18 @@
       </div>
 
       <!-- Akademik Card -->
-      <div onclick="navigateTo('kelas')" style="
+      <div onclick="switchTab('kelas')" style="
         background:var(--dark);padding:2rem 1.75rem;cursor:pointer;
         position:relative;overflow:hidden;transition:background .25s;
         border-top:3px solid #FF1744;
       " onmouseover="this.style.background='#120008'" onmouseout="this.style.background='var(--dark)'">
         <div style="font-size:2.5rem;margin-bottom:1rem;filter:drop-shadow(0 0 8px #FF1744);">🎓</div>
         <div style="font-family:'Orbitron',monospace;font-size:1rem;font-weight:700;color:#fff;margin-bottom:.5rem;letter-spacing:1px;">AKADEMIK DASHBOARD</div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:.68rem;color:var(--text-dim);margin-bottom:1.25rem;letter-spacing:1px;">Mahasiswa • Jadwal • Tugas • Statistik</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:.68rem;color:var(--text-dim);margin-bottom:1.25rem;letter-spacing:1px;">Mahasiswa • Jadwal • Tugas • Absen</div>
         <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.25rem;">
           <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;background:#1a0008;border:1px solid #FF174440;color:#FF174499;padding:2px 8px;">mahasiswa</span>
           <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;background:#1a0008;border:1px solid #FF174440;color:#FF174499;padding:2px 8px;">jadwal</span>
-          <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;background:#1a0008;border:1px solid #FF174440;color:#FF174499;padding:2px 8px;">tugas</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;background:#1a0008;border:1px solid #FF174440;color:#FF174499;padding:2px 8px;">absen</span>
         </div>
         <div style="font-family:'Orbitron',monospace;font-size:.65rem;letter-spacing:2px;color:#FF1744;display:flex;align-items:center;gap:.5rem;">
           BUKA DASHBOARD <span style="font-size:.8rem;">→</span>
@@ -284,7 +284,8 @@
         <button class="tab-btn" onclick="switchTab('jadwal')">📅 JADWAL</button>
         <button class="tab-btn" onclick="switchTab('tugas')">📋 TUGAS</button>
         <button class="tab-btn" onclick="switchTab('statistik')">📊 STATISTIK</button>
-        <button class="tab-btn" onclick="switchTab('tambah')">➕ TAMBAH</button>
+<button class="tab-btn" onclick="switchTab('tambah')">➕ TAMBAH</button>
+<button class="tab-btn" onclick="switchTab('absen')">🎯 ABSEN SIMKULIAH</button>
       </div>
 
       <!-- TAB: MAHASISWA -->
@@ -414,13 +415,144 @@
           </div>
           <div class="form-group form-full"><label class="form-label">Jadwal Kuliah</label><textarea class="form-textarea" id="f-jadwal" placeholder="Contoh:&#10;Senin: Algoritma 08:00&#10;Rabu: Basis Data 10:00"></textarea></div>
           <div class="form-group form-full"><label class="form-label">Nama Tugas (pisah dengan koma)</label><input class="form-input" id="f-tugas" type="text" placeholder="Contoh: Laporan Praktikum, Quiz Online, UAS"></div>
-          <div class="form-actions form-full">
+        <div class="form-actions form-full">
             <button class="add-btn" onclick="tambahMahasiswa()">✅ SIMPAN DATA</button>
             <button class="btn-outline" style="padding:10px 24px;font-size:0.7rem;cursor:pointer;" onclick="resetForm()">🔄 RESET</button>
           </div>
           <div id="formMsg" style="grid-column:1/-1;font-family:'Share Tech Mono',monospace;font-size:0.78rem;display:none;padding:12px 16px;border:1px solid;letter-spacing:1px;"></div>
         </div>
       </div>
+      
+<!-- TAB: ABSEN SIMKULIAH -->
+<div class="tab-panel" id="tab-absen">
+
+  <!-- ── HEADER TOOLBAR ── -->
+  <div class="tab-toolbar" style="flex-wrap:wrap;gap:1rem;">
+    <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--text-dim);">
+      <span style="color:var(--red-bright);">$</span> SELECT * FROM akun_absen —
+      <span id="absenCount" style="color:var(--red-bright);">0</span> accounts
+    </div>
+    <div style="display:flex;gap:0.8rem;flex-wrap:wrap;align-items:center;">
+      <button class="add-btn absen-all-btn" id="btnAbsenAll" onclick="absenAll()">
+        ⚡ ABSEN SEMUA AKUN
+      </button>
+      <button class="add-btn" style="background:transparent;border:1px solid #444;color:var(--text-dim);" onclick="switchAbsenView('accounts')">
+        👥 AKUN
+      </button>
+      <button class="add-btn" style="background:transparent;border:1px solid #444;color:var(--text-dim);" onclick="switchAbsenView('add')">
+        ➕ TAMBAH AKUN
+      </button>
+      <button class="add-btn" style="background:transparent;border:1px solid #444;color:var(--text-dim);" onclick="switchAbsenView('log')">
+        📋 LOG
+      </button>
+    </div>
+  </div>
+
+  <!-- STATUS BAR GLOBAL -->
+  <div id="absenStatusBar" style="display:none;margin-bottom:1rem;padding:10px 16px;
+    font-family:'Share Tech Mono',monospace;font-size:0.75rem;letter-spacing:1px;
+    border:1px solid;border-radius:4px;">
+  </div>
+
+  <!-- ════════════════════════════════════ -->
+  <!--  VIEW: DAFTAR AKUN                  -->
+  <!-- ════════════════════════════════════ -->
+  <div id="absenView-accounts">
+    <div style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;
+      color:var(--text-dim);margin-bottom:1rem;">
+      <span style="color:var(--red-bright);">$</span> LOADED ACCOUNTS — klik tombol absen per akun atau gunakan ABSEN SEMUA
+    </div>
+    <div id="akunGrid" class="mhs-grid"></div>
+    <div id="absenEmptyMsg" style="display:none;text-align:center;padding:3rem;
+      font-family:'Share Tech Mono',monospace;font-size:0.8rem;color:var(--text-dim);">
+      <div style="font-size:2rem;margin-bottom:1rem;">👤</div>
+      Belum ada akun terdaftar.<br>
+      <span style="color:var(--red-bright);">→</span>
+      <button onclick="switchAbsenView('add')"
+        style="background:none;border:none;color:var(--red-bright);cursor:pointer;
+          font-family:'Share Tech Mono',monospace;font-size:0.8rem;text-decoration:underline;">
+        Tambah akun sekarang
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════ -->
+  <!--  VIEW: TAMBAH AKUN                  -->
+  <!-- ════════════════════════════════════ -->
+  <div id="absenView-add" style="display:none;">
+    <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;
+      color:var(--text-dim);margin-bottom:1.5rem;">
+      <span style="color:var(--red-bright);">$</span> INSERT INTO akun_absen VALUES (...)
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Nama Lengkap *</label>
+        <input class="form-input" id="ab-nama" type="text" placeholder="Contoh: Akhmad Najib Alfaizi">
+      </div>
+      <div class="form-group">
+        <label class="form-label">NIM / NPM *</label>
+        <input class="form-input" id="ab-npm" type="text" placeholder="Contoh: 2208107010001">
+      </div>
+      <div class="form-group form-full">
+        <label class="form-label">Password SIMKULIAH *</label>
+        <div style="position:relative;">
+          <input class="form-input" id="ab-password" type="password"
+            placeholder="Password akun SIMKULIAH"
+            style="padding-right:3rem;">
+          <button onclick="togglePw()" style="
+            position:absolute;right:10px;top:50%;transform:translateY(-50%);
+            background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1rem;">
+            👁️
+          </button>
+        </div>
+        <div style="margin-top:0.4rem;font-family:'Share Tech Mono',monospace;
+          font-size:0.65rem;color:#555;">
+          🔒 Password dienkripsi AES-256 sebelum disimpan
+        </div>
+      </div>
+      <div class="form-actions form-full">
+        <button class="add-btn" onclick="tambahAkunAbsen()">✅ SIMPAN AKUN</button>
+        <button class="btn-outline" style="padding:10px 24px;font-size:0.7rem;" onclick="resetFormAbsen()">🔄 RESET</button>
+      </div>
+      <div id="absenFormMsg" style="grid-column:1/-1;display:none;padding:12px 16px;
+        border:1px solid;font-family:'Share Tech Mono',monospace;font-size:0.78rem;
+        letter-spacing:1px;"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════ -->
+  <!--  VIEW: LOG ABSEN                    -->
+  <!-- ════════════════════════════════════ -->
+  <div id="absenView-log" style="display:none;">
+    <div class="tab-toolbar" style="margin-bottom:1rem;">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--text-dim);">
+        <span style="color:var(--red-bright);">$</span> SELECT * FROM absen_log ORDER BY absen_at DESC LIMIT 100
+      </div>
+      <button class="add-btn" style="background:transparent;border:1px solid #444;
+        color:var(--text-dim);font-size:0.62rem;" onclick="loadAbsenLog()">
+        🔄 REFRESH
+      </button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="tugas-table">
+        <thead>
+          <tr>
+            <th>NAMA</th><th>NPM</th><th>KELAS</th><th>STATUS</th><th>WAKTU</th>
+          </tr>
+        </thead>
+        <tbody id="absenLogBody">
+          <tr><td colspan="5" style="text-align:center;color:var(--text-dim);
+            font-family:'Share Tech Mono',monospace;font-size:0.75rem;">
+            Klik REFRESH untuk muat log
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+<!-- /TAB ABSEN -->
+
     </div>
   </div>
 </section>
