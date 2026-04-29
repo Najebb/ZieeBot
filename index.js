@@ -82,10 +82,13 @@ try {
     const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));
     for (const file of commandFiles) {
       const filePath = path.join(folderPath, file);
-      const command = require(filePath);
-      if (command.data && command.data.name) {
-        client.commands.set(command.data.name, command);
-        commandCount++;
+      const exported = require(filePath);
+      const commandList = Array.isArray(exported) ? exported : [exported];
+      for (const command of commandList) {
+        if (command?.data?.name) {
+          client.commands.set(command.data.name, command);
+          commandCount++;
+        }
       }
     }
   }

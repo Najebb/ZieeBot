@@ -532,6 +532,7 @@ router.get('/music/stats', requireAuth, (req, res) => {
         : db.prepare('SELECT * FROM music_tracks ORDER BY play_count DESC LIMIT 20').all();
     } else {
       history = (db.all('music_history') || []).slice(0, 50);
+      history = history.map(h => ({ ...h, requested_by: h.requested_by || h.requestedBy || 'Unknown' }));
       tracks  = (db.all('music_tracks')  || []).sort((a,b) => (b.play_count||0) - (a.play_count||0)).slice(0, 20);
     }
 

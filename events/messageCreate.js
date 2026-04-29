@@ -33,6 +33,24 @@ const updateHistory = [
     title: '🔄 Update Bot Jebb v1.4',
     desc: '**Fitur Baru:**\n• 🎓 **Web Dashboard Akademik** — CRUD mahasiswa, jadwal, tugas via web\n• 🔐 **Sistem Login Dashboard** — Register & login publik dengan JWT\n• 🖼️ **Bot Banner Profile** — Banner animasi di profil bot\n• 👋 **Welcome Message** — Sambutan otomatis saat member baru join\n• 📊 **Dashboard Overview** — Statistik real-time mahasiswa & tugas',
     color: '#9b59b6'
+  },
+  {
+    version: 'v1.5',
+    title: '🔄 Update Bot Jebb v1.5',
+    desc: '**Fitur Baru:**\n• 🎵 Registrasi command music diperbaiki (`/play`, `/queue`, `/skip`, `/stop`, `/pause`, `/volume`, `/loop`, `/nowplaying`, `/remove`)\n• 💰 Registrasi command economy diperbaiki (`/balance`, `/daily`, `/work`, `/crime`, `/gamble`, `/rob`, `/deposit`, `/withdraw`, `/transfer`, `/shop`, `/buy`)\n• ✅ Loader command sekarang support multi-export (array)\n• ⚡ Deploy slash command jadi sinkron penuh',
+    color: '#3498db'
+  },
+  {
+    version: 'v1.6',
+    title: '🔄 Update Bot Jebb v1.6',
+    desc: '**Fitur Baru:**\n• 📊 Data economy dari command Discord otomatis tampil di dashboard economy\n• 🎶 Riwayat lagu & statistik play count tampil di dashboard music\n• 🔗 Sinkron data bot ↔ dashboard lewat API (`/api/economy/*` dan `/api/music/*`)\n• 🧱 Stabilitas fallback JSON database ditingkatkan',
+    color: '#16a085'
+  },
+  {
+    version: 'v1.7',
+    title: '🔄 Update Bot Jebb v1.7',
+    desc: '**Fitur Baru:**\n• 📖 `/help` diperbarui untuk kategori command Music & Economy\n• 🧭 `!update` sekarang memuat histori sampai v1.7\n• 🧪 Validasi jumlah command load/deploy diperjelas\n• 🛠️ Perapihan minor untuk konsistensi command catalog',
+    color: '#f39c12'
   }
 ];
 
@@ -125,7 +143,7 @@ module.exports = {
     const command = args.shift().toLowerCase();
 
     if (command === 'update') {
-      let page = updateHistory.length - 1; // Mulai dari update terbaru (v1.4)
+      let page = updateHistory.length - 1; // Mulai dari update terbaru (v1.7)
       const embed = createUpdateEmbed(page, client);
       const buttons = createUpdateButtons(page);
 

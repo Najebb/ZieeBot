@@ -22,6 +22,16 @@ module.exports = {
         inline: true
       },
       {
+        name: '💰 Economy',
+        value: '`/eco-register` `/balance` `/daily` `/work` `/crime` `/gamble` `/rob` `/deposit` `/withdraw` `/transfer` `/shop` `/buy`',
+        inline: false
+      },
+      {
+        name: '🎵 Music',
+        value: '`/play` `/queue` `/skip` `/stop` `/pause` `/volume` `/loop` `/nowplaying` `/remove`',
+        inline: false
+      },
+      {
         name: '🎉 Fun',
         value: '`/8ball` `/avatar`',
         inline: true

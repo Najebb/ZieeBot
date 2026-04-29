@@ -1,6 +1,12 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const db = require('../../utils/database');
 
+function debugLog(hypothesisId, location, message, data = {}, runId = 'initial') {
+  // #region agent log
+  fetch('http://127.0.0.1:7697/ingest/45b316d8-784b-4f1c-9e4f-f17566cac14d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'5f6549'},body:JSON.stringify({sessionId:'5f6549',runId,hypothesisId,location,message,data,timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
+}
+
 // ── Helpers ──────────────────────────────────────────────────
 const DAILY_AMOUNT  = 500;
 const DAILY_COOLDOWN = 86400000; // 24 jam
@@ -14,6 +20,7 @@ function getEcon(guildId, userId) {
   if (db.dbType === 'sqlite') {
     let row = db.prepare('SELECT * FROM economy WHERE guild_id=? AND user_id=?').get(guildId, userId);
     if (!row) {
+      debugLog('E1', 'commands/economy/economy.js:getEcon:sqlite-create', 'Economy account auto-created (sqlite)', { guildId, userId });
       db.prepare('INSERT INTO economy (guild_id,user_id,balance,bank,last_daily,last_work,last_crime) VALUES (?,?,0,0,0,0,0)').run(guildId, userId);
       row = { guild_id: guildId, user_id: userId, balance: 0, bank: 0, last_daily: 0, last_work: 0, last_crime: 0 };
     }
@@ -22,11 +29,41 @@ function getEcon(guildId, userId) {
     const all = db.all('economy') || [];
     let row = all.find(r => r.guild_id === guildId && r.user_id === userId);
     if (!row) {
+      debugLog('E1', 'commands/economy/economy.js:getEcon:json-create', 'Economy account auto-created (json)', { guildId, userId });
       row = { guild_id: guildId, user_id: userId, balance: 0, bank: 0, last_daily: 0, last_work: 0, last_crime: 0 };
       all.push(row); db.save('economy', all);
     }
     return row;
   }
+}
+
+function hasEconAccount(guildId, userId) {
+  if (db.dbType === 'sqlite') {
+    return Boolean(db.prepare('SELECT 1 FROM economy WHERE guild_id=? AND user_id=?').get(guildId, userId));
+  }
+  const all = db.all('economy') || [];
+  return all.some(r => r.guild_id === guildId && r.user_id === userId);
+}
+
+function createEconAccount(guildId, userId) {
+  if (db.dbType === 'sqlite') {
+    db.prepare('INSERT INTO economy (guild_id,user_id,balance,bank,last_daily,last_work,last_crime) VALUES (?,?,0,0,0,0,0)').run(guildId, userId);
+  } else {
+    const all = db.all('economy') || [];
+    all.push({ guild_id: guildId, user_id: userId, balance: 0, bank: 0, last_daily: 0, last_work: 0, last_crime: 0 });
+    db.save('economy', all);
+  }
+}
+
+function requireRegisteredAccount(interaction) {
+  const guildId = interaction.guild.id;
+  const userId = interaction.user.id;
+  if (hasEconAccount(guildId, userId)) return false;
+  interaction.reply({
+    content: '❌ Kamu belum punya akun economy. Daftar dulu pakai `/eco-register`.',
+    ephemeral: true
+  }).catch(() => {});
+  return true;
 }
 
 function saveEcon(guildId, userId, data) {
@@ -64,7 +101,11 @@ const balanceCmd = {
     .setDescription('💰 Cek saldo ZN kamu atau user lain')
     .addUserOption(o => o.setName('user').setDescription('User yang dicek').setRequired(false)),
   async execute(interaction) {
+    if (requireRegisteredAccount(interaction)) return;
     const target = interaction.options.getUser('user') || interaction.user;
+    if (!hasEconAccount(interaction.guild.id, target.id)) {
+      return interaction.reply({ content: `❌ ${target.username} belum terdaftar di economy.`, ephemeral: true });
+    }
     const econ = getEcon(interaction.guild.id, target.id);
     const embed = new EmbedBuilder()
       .setTitle(`💰 Saldo ${target.username}`)
@@ -83,6 +124,7 @@ const balanceCmd = {
 const dailyCmd = {
   data: new SlashCommandBuilder().setName('daily').setDescription('🎁 Ambil reward harian kamu'),
   async execute(interaction) {
+    if (requireRegisteredAccount(interaction)) return;
     const { id: userId } = interaction.user;
     const { id: guildId } = interaction.guild;
     const econ = getEcon(guildId, userId);
@@ -108,6 +150,7 @@ const workJobs = ['ngoding','desain logo','nulis laporan','debug server','jadi o
 const workCmd = {
   data: new SlashCommandBuilder().setName('work').setDescription('💼 Kerja dan dapatkan ZN'),
   async execute(interaction) {
+    if (requireRegisteredAccount(interaction)) return;
     const { id: userId } = interaction.user;
     const { id: guildId } = interaction.guild;
     const econ = getEcon(guildId, userId);
@@ -134,6 +177,7 @@ const workCmd = {
 const crimeCmd = {
   data: new SlashCommandBuilder().setName('crime').setDescription('🔫 Lakukan kejahatan (risiko tinggi!)'),
   async execute(interaction) {
+    if (requireRegisteredAccount(interaction)) return;
     const { id: userId } = interaction.user;
     const { id: guildId } = interaction.guild;
     const econ = getEcon(guildId, userId);
@@ -173,6 +217,7 @@ const gambleCmd = {
     .setDescription('🎰 Taruh ZN di coinflip!')
     .addIntegerOption(o => o.setName('jumlah').setDescription('Jumlah ZN').setRequired(true).setMinValue(10)),
   async execute(interaction) {
+    if (requireRegisteredAccount(interaction)) return;
     const { id: userId } = interaction.user;
     const { id: guildId } = interaction.guild;
     const amount = interaction.options.getInteger('jumlah');
@@ -205,6 +250,7 @@ const robCmd = {
     .setDescription('🦹 Rampok user lain!')
     .addUserOption(o => o.setName('target').setDescription('User yang dirampok').setRequired(true)),
   async execute(interaction) {
+    if (requireRegisteredAccount(interaction)) return;
     const { id: userId } = interaction.user;
     const { id: guildId } = interaction.guild;
     const target = interaction.options.getUser('target');
@@ -243,6 +289,7 @@ const depositCmd = {
     .setDescription('🏦 Simpan ZN ke bank')
     .addIntegerOption(o => o.setName('jumlah').setDescription('Jumlah atau "all"').setRequired(true).setMinValue(1)),
   async execute(interaction) {
+    if (requireRegisteredAccount(interaction)) return;
     const { id: userId } = interaction.user;
     const { id: guildId } = interaction.guild;
     const amount = interaction.options.getInteger('jumlah');
@@ -261,6 +308,7 @@ const withdrawCmd = {
     .setDescription('🏧 Ambil ZN dari bank')
     .addIntegerOption(o => o.setName('jumlah').setDescription('Jumlah ZN').setRequired(true).setMinValue(1)),
   async execute(interaction) {
+    if (requireRegisteredAccount(interaction)) return;
     const { id: userId } = interaction.user;
     const { id: guildId } = interaction.guild;
     const amount = interaction.options.getInteger('jumlah');
@@ -281,6 +329,7 @@ const transferCmd = {
     .addUserOption(o => o.setName('target').setDescription('Penerima').setRequired(true))
     .addIntegerOption(o => o.setName('jumlah').setDescription('Jumlah ZN').setRequired(true).setMinValue(1)),
   async execute(interaction) {
+    if (requireRegisteredAccount(interaction)) return;
     const { id: userId } = interaction.user;
     const { id: guildId } = interaction.guild;
     const target = interaction.options.getUser('target');
@@ -301,6 +350,7 @@ const transferCmd = {
 const shopCmd = {
   data: new SlashCommandBuilder().setName('shop').setDescription('🛒 Lihat item di toko'),
   async execute(interaction) {
+    if (requireRegisteredAccount(interaction)) return;
     const { id: guildId } = interaction.guild;
     let items = [];
     if (db.dbType === 'sqlite') {
@@ -322,6 +372,7 @@ const buyCmd = {
     .setDescription('🛍️ Beli item dari toko')
     .addIntegerOption(o => o.setName('id').setDescription('ID item').setRequired(true)),
   async execute(interaction) {
+    if (requireRegisteredAccount(interaction)) return;
     const { id: userId } = interaction.user;
     const { id: guildId } = interaction.guild;
     const itemId = interaction.options.getInteger('id');
@@ -355,5 +406,29 @@ const buyCmd = {
   }
 };
 
+const registerCmd = {
+  data: new SlashCommandBuilder()
+    .setName('eco-register')
+    .setDescription('🪪 Daftar akun economy kamu'),
+  async execute(interaction) {
+    const guildId = interaction.guild.id;
+    const userId = interaction.user.id;
+    if (hasEconAccount(guildId, userId)) {
+      return interaction.reply({ content: '✅ Akun economy kamu sudah terdaftar.', ephemeral: true });
+    }
+    createEconAccount(guildId, userId);
+    debugLog('E2', 'commands/economy/economy.js:register:create', 'Economy account created by slash command', { guildId, userId }, 'post-fix');
+    await interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setTitle('🪪 Registrasi Economy Berhasil')
+          .setDescription(`Akun economy untuk ${interaction.user} sudah dibuat.\nSekarang kamu bisa pakai command economy seperti \`/daily\` dan \`/balance\`.`)
+          .setColor('#8B0000')
+          .setTimestamp()
+      ]
+    });
+  }
+};
+
 // ── Export semua command ──────────────────────────────────────
-module.exports = [balanceCmd, dailyCmd, workCmd, crimeCmd, gambleCmd, robCmd, depositCmd, withdrawCmd, transferCmd, shopCmd, buyCmd];
+module.exports = [registerCmd, balanceCmd, dailyCmd, workCmd, crimeCmd, gambleCmd, robCmd, depositCmd, withdrawCmd, transferCmd, shopCmd, buyCmd];
